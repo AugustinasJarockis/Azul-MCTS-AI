@@ -1,6 +1,5 @@
 ﻿using AzulBoardGame.Enums;
 using AzulBoardGame.Extensions;
-using System.Drawing;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -16,10 +15,10 @@ namespace AzulBoardGame
 
         private readonly List<BitmapImage> bitmapSources = [
             new BitmapImage(new Uri("Textures/firstTile.png", UriKind.Relative)),
-            new BitmapImage(new Uri("Textures/brownTile.png", UriKind.Relative)),
-            new BitmapImage(new Uri("Textures/blackTile.png", UriKind.Relative)),
             new BitmapImage(new Uri("Textures/whiteTile.png", UriKind.Relative)),
+            new BitmapImage(new Uri("Textures/brownTile.png", UriKind.Relative)),
             new BitmapImage(new Uri("Textures/redTile.png",   UriKind.Relative)),
+            new BitmapImage(new Uri("Textures/blackTile.png", UriKind.Relative)),
             new BitmapImage(new Uri("Textures/cyanTile.png",  UriKind.Relative))
             ];
 
@@ -59,6 +58,11 @@ namespace AzulBoardGame
                     _container.SelectTiles(TileType);
             };
         }
+
+        public void Destroy() {
+            tileBorder.Child = null;
+            _canvas.Children.Remove(tileBorder);
+        }
         
         public void Move(Canvas newCanvas, ITileContainer newContainer, double xPos, double yPos, double size) {
             _canvas.Children.Remove(tileBorder);
@@ -72,6 +76,9 @@ namespace AzulBoardGame
 
         public void Move(double xPos, double yPos) {
             _canvas.SetRelativePos(tileBorder, xPos, yPos);
+        }
+        public void MoveCentered(double xPos, double yPos, double tileSize) {
+            _canvas.SetRelativePosCenteredSquare(tileBorder, xPos, yPos, tileSize);
         }
 
         public void ShowBorder() => tileBorder.BorderThickness = new Thickness(2.5);

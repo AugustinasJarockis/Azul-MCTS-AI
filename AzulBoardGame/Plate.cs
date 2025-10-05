@@ -1,5 +1,6 @@
 ﻿using AzulBoardGame.Enums;
 using AzulBoardGame.Extensions;
+using System.Numerics;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -15,6 +16,7 @@ namespace AzulBoardGame
         private List<Tile> tiles = [];
 
         private Action<List<Tile>> TransferTiles;
+        private Action<List<Tile>>? TileSelectionCallback = null;
 
         public List<TileType> TyleTypes => tiles.Select(t => t.TileType).ToList();
         public int TileCount => tiles.Count;
@@ -54,16 +56,23 @@ namespace AzulBoardGame
         }
 
         public void SelectTiles(TileType type) {
-            for (int i = 0; i < tiles.Count; i++) {
-                if (tiles[i].TileType == type) {
-                    tiles[i].HideBorder();
-                    tiles.Remove(tiles[i]);
-                    i--;
+            if (TileSelectionCallback != null) {
+                List<Tile> selectedTiles = [];
+            
+                for (int i = 0; i < tiles.Count; i++) {
+                    if (tiles[i].TileType == type) {
+                        tiles[i].HideBorder();
+                        tiles[i].StopMouseInput();
+                        selectedTiles.Add(tiles[i]);
+                        tiles.Remove(tiles[i]);
+                        i--;
+                    }
                 }
-            }
 
-            TransferTiles(tiles);
-            tiles.Clear();
+                TransferTiles(tiles);
+                tiles.Clear();
+                TileSelectionCallback(selectedTiles);
+            }
         }
 
         public void HighlightTiles(TileType type) {
@@ -88,5 +97,8 @@ namespace AzulBoardGame
             foreach (Tile tile in tiles)
                 tile.StopMouseInput();
         }
+
+        public void SetSelectionCallback(Action<List<Tile>> tileSelectionCallback) => TileSelectionCallback = tileSelectionCallback;
+        public void ClearSelectionCallback() => TileSelectionCallback = null;
     }
 }

@@ -49,7 +49,7 @@ namespace AzulBoardGame
             return newTiles;
         }
 
-        public void DiscardTiles(TileType type, int count = 1) => tileDiscard[(int)type + 1] += count;
+        public void DiscardTiles(TileType type, int count = 1) => tileDiscard[(int)type - 1] += count;
 
         private void ReuseDiscardedTiles() {
             for(int i = 0; i < tileReserve.Count; i++) {
