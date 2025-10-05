@@ -1,6 +1,5 @@
 ﻿using AzulBoardGame.Enums;
 using AzulBoardGame.Extensions;
-using System.Numerics;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -18,8 +17,9 @@ namespace AzulBoardGame
         private Action<List<Tile>> TransferTiles;
         private Action<List<Tile>>? TileSelectionCallback = null;
 
-        public List<TileType> TyleTypes => tiles.Select(t => t.TileType).ToList();
+        public List<TileType> TileTypes => [..tiles.Select(t => t.TileType)];
         public int TileCount => tiles.Count;
+        public bool IsEmpty => tiles.Count == 0;
 
         public Plate(Canvas centerCanvas, Action<List<Tile>> transferTilesFunc, double xPos, double yPos) { 
             _centerCanvas = centerCanvas;

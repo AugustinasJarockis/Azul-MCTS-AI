@@ -6,37 +6,36 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace AzulBoardGame
+namespace AzulBoardGame.Players
 {
-    internal class Player : ITileContainer
+    internal abstract class Player : ITileContainer
     {
         private readonly Canvas _mainCanvas;
         private readonly ScaleTransform _scaleTransform;
         private readonly TranslateTransform _translateTransform;
-        private readonly TilePlates _tilePlates;
+        protected readonly TilePlates _tilePlates;
         private readonly TileBank _tileBank;
         private readonly Key _keyToFocus;
 
-        private readonly Action NotifyAboutCompletion;
+        protected readonly Action NotifyAboutCompletion;
 
         private Canvas playerCanvas;
-        private ProcessingLine processingLine;
+        protected ProcessingLine processingLine;
         private PointCounter pointCounter;
         private PlayerNamePanel playerNamePanel;
-        private List<TileRow> tileRows = [];
-        private List<Tile> selectedTiles = [];
-        private TileGrid tileGrid;
+        protected List<TileRow> tileRows = [];
+        protected List<Tile> selectedTiles = [];
+        protected TileGrid tileGrid;
 
         public Player(
             Canvas mainCanvas, 
             ScaleTransform scaleTransform, 
             TranslateTransform translateTransform,
-            Action nofityAboutCompletion,
+            Action notifyAboutCompletion,
             TilePlates tilePlates,
             TileBank tileBank,
             string name,
             Brush nameColour,
-            PlayerType playerType,
             Key keyToFocus,
             double xPos, 
             double yPos, 
@@ -45,7 +44,7 @@ namespace AzulBoardGame
             _mainCanvas = mainCanvas;
             _scaleTransform = scaleTransform;
             _translateTransform = translateTransform;
-            NotifyAboutCompletion = nofityAboutCompletion;
+            NotifyAboutCompletion = notifyAboutCompletion;
             _tilePlates = tilePlates;
             _tileBank = tileBank;
             _keyToFocus = keyToFocus;
@@ -126,11 +125,8 @@ namespace AzulBoardGame
             pointCounter.UpdatePoints(-pointsLost);
         }
 
-        public void SelectTiles() {
-            SetPlayersTurn();
-            _tilePlates.EnableUserInput();
-            _tilePlates.SetSelectionCallback(ManageSelectedTiles);
-        }
+        public abstract void SelectTiles();
+        public abstract void SelectRow();
         
         public void ManageSelectedTiles(List<Tile> tiles) {
             for (int i = 0; i < tiles.Count; i++) {
@@ -146,16 +142,7 @@ namespace AzulBoardGame
 
             _tilePlates.DisableUserInput();
             _tilePlates.ClearSelectionCallback();
-
-            for (int  i = 0; i < tileRows.Count; i++) {
-                if (!tileRows[i].IsFull 
-                    && (tileRows[i].rowTileType == null || tileRows[i].rowTileType == selectedTiles[0].TileType)
-                    && !tileGrid.RowHasType(i, selectedTiles[0].TileType))
-                    
-                    tileRows[i].StartMouseInput();
-            }
-
-            processingLine.StartMouseInput();
+            SelectRow();
         }
 
         public void TakeSelectedTiles(TileRow tileRow) {
@@ -168,17 +155,7 @@ namespace AzulBoardGame
             RemoveSelectedTiles();
         }
 
-        private void RemoveSelectedTiles() {
-            selectedTiles.Clear();
-            foreach (var row in tileRows) {
-                row.StopMouseInput();
-            }
-
-            processingLine.StopMouseInput();
-
-            EndPlayersTurn();
-            NotifyAboutCompletion();
-        }
+        protected abstract void RemoveSelectedTiles();
 
         public void SetPlayersTurn() => playerNamePanel.ShowPlayerTurn();
         public void EndPlayersTurn() => playerNamePanel.HidePlayerTurn();

@@ -35,8 +35,10 @@ namespace AzulBoardGame
 
         public List<Plate> Plates { get; set; } = [];
         public int StartingPlayer { get; private set; } = 0;
-        public int CenterTileCount => centerTiles.Count + (firstTile != null ? 1 : 0);
+        public List<TileType> CenterTileTypes => [..centerTiles.Select(t => t.TileType)];
+        public int CenterTileCount => centerTiles.Count;
         public int TotalTileCount => CenterTileCount + Plates.Sum(p => p.TileCount);
+        public bool FirstTileExists => firstTile != null;
 
         public TilePlates(
             Canvas mainCanvas, 
@@ -82,10 +84,12 @@ namespace AzulBoardGame
 
         public void TransferTilesToCenter(List<Tile> tiles) {            
             foreach (Tile tile in tiles) {
-                if (CenterTileCount > 29)
+                int firstTileCount = FirstTileExists ? 1 : 0;
+
+                if (CenterTileCount + firstTileCount > 29)
                     throw new Exception("The number of center tiles should never exceed 28");
                 
-                (int xPos, int yPos) = centerTilePositions[CenterTileCount];
+                (int xPos, int yPos) = centerTilePositions[CenterTileCount + firstTileCount];
 
                 tile.Move(centerCanvas, this, 0.1 * xPos + 0.5, -0.1 * yPos + 0.5, tileSize);
 

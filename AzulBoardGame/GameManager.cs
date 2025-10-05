@@ -1,4 +1,5 @@
 ﻿using AzulBoardGame.Enums;
+using AzulBoardGame.Players;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -29,10 +30,10 @@ namespace AzulBoardGame
             tilePlates = new TilePlates(_mainCanvas, _scaleTransform, _translateTransform, this, Key.NumPad5, plateCount);
             tileBank = new TileBank();
 
-            players.Add(new(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Test1", Brushes.Red, PlayerType.RandomAI, Key.NumPad1, 0.18, 0.82, 0.35));
-            players.Add(new(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Test3", Brushes.Blue, PlayerType.RandomAI, Key.NumPad3, 0.18, 0.18, 0.35));
-            players.Add(new(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Test4", Brushes.Green, PlayerType.RandomAI, Key.NumPad4, 0.82, 0.18, 0.35));
-            players.Add(new(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Test2", Brushes.Yellow, PlayerType.RandomAI, Key.NumPad2, 0.82, 0.82, 0.35));
+            players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "RealPlayer", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35));
+            players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI1", Brushes.Blue, Key.NumPad3, 0.18, 0.18, 0.35));
+            players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI2", Brushes.Green, Key.NumPad4, 0.82, 0.18, 0.35));
+            players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI3", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35));
 
             _mainCanvas.KeyDown += (s, e) => {
                 if (e.Key == Key.S && !gameStarted) {
