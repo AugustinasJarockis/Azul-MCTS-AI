@@ -12,12 +12,19 @@
     <None Remove="Textures\background.jpg" />
     <None Remove="Textures\blackTile.png" />
     <None Remove="Textures\brownTile.png" />
+    <None Remove="Textures\continue.png" />
     <None Remove="Textures\firstTile.png" />
     <None Remove="Textures\mandala.png" />
     <None Remove="Textures\mandala.svg" />
     <None Remove="Textures\playerBoard.png" />
     <None Remove="Textures\redTile.png" />
     <None Remove="Textures\whiteTile.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Textures\continue.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
 
   <ItemGroup>

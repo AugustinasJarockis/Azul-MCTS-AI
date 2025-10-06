@@ -125,8 +125,8 @@ namespace AzulBoardGame.Players
             pointCounter.UpdatePoints(-pointsLost);
         }
 
-        public abstract void SelectTiles();
-        public abstract void SelectRow();
+        public abstract Task SelectTiles();
+        public abstract Task SelectRow();
         
         public void ManageSelectedTiles(List<Tile> tiles) {
             for (int i = 0; i < tiles.Count; i++) {

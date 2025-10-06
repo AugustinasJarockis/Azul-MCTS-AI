@@ -27,13 +27,13 @@ namespace AzulBoardGame.Players
 
         }
 
-        public override void SelectTiles() {
+        public override async Task SelectTiles() {
             SetPlayersTurn();
             _tilePlates.EnableUserInput();
             _tilePlates.SetSelectionCallback(ManageSelectedTiles);
         }
 
-        public override void SelectRow() {
+        public override async Task SelectRow() {
             for (int i = 0; i < tileRows.Count; i++) {
                 if (!tileRows[i].IsFull
                     && (tileRows[i].rowTileType == null || tileRows[i].rowTileType == selectedTiles[0].TileType)

@@ -1,14 +1,20 @@
-﻿using AzulBoardGame.PlayerBoard;
-using System.Runtime.CompilerServices;
+﻿using AzulBoardGame.Extensions;
+using AzulBoardGame.PlayerBoard;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace AzulBoardGame.Players
 {
     internal class RandomAI : Player
     {
         private Random rnd = new(DateTime.Now.Microsecond * DateTime.Now.Millisecond);
+        private readonly bool _pauseBetweenChoices;
+
+        private Image? waitButton = null;
+        private TaskCompletionSource<bool>? waiter = null;
         public RandomAI(
             Canvas mainCanvas,
             ScaleTransform scaleTransform,
@@ -21,13 +27,36 @@ namespace AzulBoardGame.Players
             Key keyToFocus,
             double xPos,
             double yPos,
-            double size
+            double size,
+            bool pauseBetweenChoices = false
             )
             : base(mainCanvas, scaleTransform, translateTransform, notifyAboutCompletion, tilePlates, tileBank, name, nameColour, keyToFocus, xPos, yPos, size) {
 
+            _pauseBetweenChoices = pauseBetweenChoices;
+
+            if (_pauseBetweenChoices) {
+
+                waitButton = new Image {
+                    Source = new BitmapImage(new Uri("Textures/continue.png", UriKind.Relative)),
+                    Visibility = Visibility.Hidden
+                };
+
+                mainCanvas.Loaded += (s, e) => {
+                    mainCanvas.Dispatcher.BeginInvoke(() => {
+                        mainCanvas.SetRelativePosCentered(waitButton, 0.5, 0.9, 0.1, 0.3);
+                    });
+                };
+
+                mainCanvas.Children.Add(waitButton);
+
+                waitButton.MouseDown += (s, a) => waiter?.TrySetResult(true);
+                waitButton.MouseEnter += (s, a) => waitButton.Opacity = 0.5;
+                waitButton.MouseLeave += (s, a) => waitButton.Opacity = 1.0;
+            }
         }
 
-        public override void SelectTiles() {
+        public override async Task SelectTiles() {
+            await WaitToContinue();
             SetPlayersTurn();
             _tilePlates.SetSelectionCallback(ManageSelectedTiles);
 
@@ -47,7 +76,8 @@ namespace AzulBoardGame.Players
             }
         }
 
-        public override void SelectRow() {
+        public override async Task SelectRow() {
+            await WaitToContinue();
             List<TileRow> possibleRows = [];
             
             for (int i = 0; i < tileRows.Count; i++) {
@@ -71,6 +101,15 @@ namespace AzulBoardGame.Players
             selectedTiles.Clear();
             EndPlayersTurn();
             NotifyAboutCompletion();
+        }
+
+        private async Task WaitToContinue() {
+            if (_pauseBetweenChoices) {
+                waiter = new();
+                waitButton!.Visibility = Visibility.Visible;
+                await waiter.Task;
+                waitButton.Visibility = Visibility.Hidden;
+            }
         }
     }
 }

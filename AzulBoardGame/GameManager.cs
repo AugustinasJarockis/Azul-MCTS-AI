@@ -31,7 +31,7 @@ namespace AzulBoardGame
             tileBank = new TileBank();
 
             players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "RealPlayer", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35));
-            players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI1", Brushes.Blue, Key.NumPad3, 0.18, 0.18, 0.35));
+            players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI1", Brushes.Blue, Key.NumPad3, 0.18, 0.18, 0.35, true));
             players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI2", Brushes.Green, Key.NumPad4, 0.82, 0.18, 0.35));
             players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI3", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35));
 
