@@ -18,6 +18,7 @@
     <None Remove="Textures\mandala.svg" />
     <None Remove="Textures\playerBoard.png" />
     <None Remove="Textures\redTile.png" />
+    <None Remove="Textures\start.png" />
     <None Remove="Textures\whiteTile.png" />
   </ItemGroup>
 
@@ -51,6 +52,9 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Textures\redTile.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Textures\start.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Textures\whiteTile.png">

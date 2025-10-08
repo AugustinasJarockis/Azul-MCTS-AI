@@ -26,6 +26,8 @@ namespace AzulBoardGame
         private int plateCount = 9;
         private bool gameStarted = false;
 
+        private Image startButton = null;
+
         private TaskCompletionSource<bool> tcs;
 
         public int CurrentPlayer { get; private set; } = 0;
@@ -38,7 +40,7 @@ namespace AzulBoardGame
             tileBank = new TileBank();
 
             players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "RealPlayer", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35));
-            players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI1", Brushes.Blue, Key.NumPad3, 0.18, 0.18, 0.35));
+            players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI1", Brushes.Blue, Key.NumPad3, 0.18, 0.18, 0.35, true));
             players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI2", Brushes.Green, Key.NumPad4, 0.82, 0.18, 0.35));
             players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI3", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35));
 
@@ -61,15 +63,38 @@ namespace AzulBoardGame
                 waitButton.MouseLeave += (s, a) => waitButton.Opacity = 1.0;
             }
 
+            startButton = new Image {
+                Source = new BitmapImage(new Uri("Textures/start.png", UriKind.Relative)),
+                Visibility = Visibility.Visible
+            };
+
+            mainCanvas.Loaded += (s, e) => {
+                mainCanvas.Dispatcher.BeginInvoke(() => {
+                    mainCanvas.SetRelativePosCentered(startButton, 0.5, 0.9, 0.1, 0.3);
+                });
+            };
+
+            mainCanvas.Children.Add(startButton);
+
+            startButton.MouseDown += (s, a) => { if (!gameStarted) StartGame(); };
+            startButton.MouseEnter += (s, a) => startButton.Opacity = 0.5;
+            startButton.MouseLeave += (s, a) => startButton.Opacity = 1.0;
+
             _mainCanvas.KeyDown += (s, e) => {
                 if (e.Key == Key.S && !gameStarted) {
-                    gameStarted = true;
                     StartGame();
                 }
             };
         }
 
-        public async Task StartGame() {
+        public void StartGame() {
+            gameStarted = true;
+            startButton.Visibility = Visibility.Hidden;
+
+            PlayGame();
+        }
+
+        private async Task PlayGame() {
             while (!players.Any(p => p.HasFinished())) {
                 var tileTypes = tileBank.RefreshTiles(plateCount);
                 tilePlates.RefreshPlates(tileTypes);

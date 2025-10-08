@@ -60,10 +60,12 @@ namespace AzulBoardGame.Players
             SetPlayersTurn();
             _tilePlates.SetSelectionCallback(ManageSelectedTiles);
 
-            var plates = _tilePlates.Plates.Where(p => !p.IsEmpty).ToList();
-            int selection = rnd.Next(plates.Count + 1);
+            int centerTilesExist = _tilePlates.CenterTileCount != 0 ? 1 : 0;
 
-            if (selection == 0) {
+            var plates = _tilePlates.Plates.Where(p => !p.IsEmpty).ToList();
+            int selection = rnd.Next(plates.Count + centerTilesExist);
+
+            if (selection == 0 && centerTilesExist != 0) {
                 var centerTileTypes = _tilePlates.CenterTileTypes;
                 int tileToSelect = rnd.Next(_tilePlates.CenterTileTypes.Count);
                 var selectedType = centerTileTypes[tileToSelect];
@@ -71,8 +73,8 @@ namespace AzulBoardGame.Players
             }
             else {
                 int tileToSelect = rnd.Next(4);
-                var selectedType = plates[selection - 1].TileTypes[tileToSelect];
-                plates[selection - 1].SelectTiles(selectedType);
+                var selectedType = plates[selection - centerTilesExist].TileTypes[tileToSelect];
+                plates[selection - centerTilesExist].SelectTiles(selectedType);
             }
         }
 

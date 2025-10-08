@@ -113,7 +113,7 @@ namespace AzulBoardGame
             for (int i = 0; i < (tileTypes.Count + 3) / 4; i++)
                 Plates[i].PlaceTiles([.. tileTypes.Skip(i * 4).Take(4)]);
 
-            firstTile = new Tile(centerCanvas, this, TileType.First, 0.5, 0.5, tileSize);
+            firstTile = firstTile ?? new Tile(centerCanvas, this, TileType.First, 0.5, 0.5, tileSize);
         }
 
         public void SelectTiles(TileType type) {
