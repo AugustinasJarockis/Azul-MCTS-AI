@@ -27,6 +27,9 @@ namespace AzulBoardGame.Players
         protected List<Tile> selectedTiles = [];
         protected TileGrid tileGrid;
 
+        public int Points => pointCounter.Points;
+        public string Name => playerNamePanel.Name;
+
         public Player(
             Canvas mainCanvas, 
             ScaleTransform scaleTransform, 
@@ -50,9 +53,7 @@ namespace AzulBoardGame.Players
             _keyToFocus = keyToFocus;
 
 
-            playerCanvas = new() {
-                Name = name + "Canvas"
-            };
+            playerCanvas = new() {};
 
             processingLine = new(playerCanvas, _tileBank, DiscardSelectedTiles);
             pointCounter = new(playerCanvas);
@@ -64,7 +65,6 @@ namespace AzulBoardGame.Players
             };
 
             Image playerBoard = new Image {
-                Name = "Player" + name,
                 Opacity = 0.65,
                 Stretch = Stretch.Fill,
                 Source = new BitmapImage(new Uri("Textures/playerBoard.png", UriKind.Relative)),

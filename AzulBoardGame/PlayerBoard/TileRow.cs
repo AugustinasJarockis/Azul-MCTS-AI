@@ -23,8 +23,11 @@ namespace AzulBoardGame.PlayerBoard
 
         private List<Tile> rowTiles = [];
 
-        public TileType? rowTileType { get; private set; } = null;
+        public TileType? rowTileType => rowTiles.Count != 0 ? rowTiles[0].TileType : null;
         public bool IsFull => rowTiles.Count == _capacity;
+        public bool IsEmpty => rowTiles.Count == 0;
+        public int TileCount => rowTiles.Count;
+        public int FreeSlotCount => _capacity - rowTiles.Count;
         public TileRow(
             Canvas playerCanvas, 
             double xPos, 
@@ -79,9 +82,6 @@ namespace AzulBoardGame.PlayerBoard
         }
 
         public void AddTiles(List<Tile> tiles) {
-            if (rowTileType == null)
-                rowTileType = tiles[0].TileType;
-
             while (rowTiles.Count < _capacity && tiles.Count > 0) {
                 tiles[0].Move(_xPos - 0.0875 - rowTiles.Count * 0.092, _yPos - 0.05);
                 rowTiles.Add(tiles[0]);
@@ -98,7 +98,6 @@ namespace AzulBoardGame.PlayerBoard
                 rowTiles[i].Destroy();
 
             rowTiles.Clear();
-            rowTileType = null;
             return firstTile;
         }
 

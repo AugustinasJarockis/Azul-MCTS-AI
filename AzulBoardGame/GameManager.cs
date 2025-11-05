@@ -1,5 +1,4 @@
-﻿using AzulBoardGame.Enums;
-using AzulBoardGame.Extensions;
+﻿using AzulBoardGame.Extensions;
 using AzulBoardGame.Players;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,15 +14,16 @@ namespace AzulBoardGame
         private readonly ScaleTransform _scaleTransform;
         private readonly TranslateTransform _translateTransform;
 
+        private VictoryPopup victoryPopup;
         private Image? waitButton;
-        private bool waitBeforeTurnEnd = true;
+        private bool waitBeforeTurnEnd = false;
         private TaskCompletionSource<bool> waiter;
 
         private List<Player> players = [];
         private TileBank tileBank;
         private TilePlates tilePlates;
 
-        private int plateCount = 9;
+        private int plateCount = 5;
         private bool gameStarted = false;
 
         private Image startButton = null;
@@ -36,13 +36,24 @@ namespace AzulBoardGame
             _scaleTransform = scaleTransform;
             _translateTransform = translateTransform;
 
+            CreateGameBoardObjects();
+
+            _mainCanvas.KeyDown += (s, e) => {
+                if (e.Key == Key.S && !gameStarted) {
+                    StartGame();
+                }
+            };
+        }
+
+        private void CreateGameBoardObjects() {
+            victoryPopup = new VictoryPopup(_mainCanvas, ResetGame);
             tilePlates = new TilePlates(_mainCanvas, _scaleTransform, _translateTransform, this, Key.NumPad5, plateCount);
             tileBank = new TileBank();
 
-            players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "RealPlayer", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35));
-            players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI1", Brushes.Blue, Key.NumPad3, 0.18, 0.18, 0.35, true));
+            //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "RealPlayer", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35));
+            players.Add(new HeuristicAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "HeuristicAI", Brushes.Blue, Key.NumPad3, 0.18, 0.18, 0.35));
             players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI2", Brushes.Green, Key.NumPad4, 0.82, 0.18, 0.35));
-            players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI3", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35));
+            //players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI3", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35));
 
             if (waitBeforeTurnEnd) {
                 waitButton = new Image {
@@ -50,13 +61,13 @@ namespace AzulBoardGame
                     Visibility = Visibility.Hidden
                 };
 
-                mainCanvas.Loaded += (s, e) => {
-                    mainCanvas.Dispatcher.BeginInvoke(() => {
-                        mainCanvas.SetRelativePosCentered(waitButton, 0.5, 0.9, 0.1, 0.3);
+                _mainCanvas.Loaded += (s, e) => {
+                    _mainCanvas.Dispatcher.BeginInvoke(() => {
+                        _mainCanvas.SetRelativePosCentered(waitButton, 0.5, 0.9, 0.1, 0.3);
                     });
                 };
 
-                mainCanvas.Children.Add(waitButton);
+                _mainCanvas.Children.Add(waitButton);
 
                 waitButton.MouseDown += (s, a) => waiter?.TrySetResult(true);
                 waitButton.MouseEnter += (s, a) => waitButton.Opacity = 0.5;
@@ -68,23 +79,17 @@ namespace AzulBoardGame
                 Visibility = Visibility.Visible
             };
 
-            mainCanvas.Loaded += (s, e) => {
-                mainCanvas.Dispatcher.BeginInvoke(() => {
-                    mainCanvas.SetRelativePosCentered(startButton, 0.5, 0.9, 0.1, 0.3);
+            _mainCanvas.Loaded += (s, e) => {
+                _mainCanvas.Dispatcher.BeginInvoke(() => {
+                    _mainCanvas.SetRelativePosCentered(startButton, 0.5, 0.9, 0.1, 0.3);
                 });
             };
 
-            mainCanvas.Children.Add(startButton);
+            _mainCanvas.Children.Add(startButton);
 
             startButton.MouseDown += (s, a) => { if (!gameStarted) StartGame(); };
             startButton.MouseEnter += (s, a) => startButton.Opacity = 0.5;
             startButton.MouseLeave += (s, a) => startButton.Opacity = 1.0;
-
-            _mainCanvas.KeyDown += (s, e) => {
-                if (e.Key == Key.S && !gameStarted) {
-                    StartGame();
-                }
-            };
         }
 
         public void StartGame() {
@@ -92,6 +97,16 @@ namespace AzulBoardGame
             startButton.Visibility = Visibility.Hidden;
 
             PlayGame();
+        }
+
+        public void ResetGame() {
+            gameStarted = false;
+            players.Clear();
+            _mainCanvas.Children.Clear();
+            var mainWindow = Application.Current.MainWindow;
+            mainWindow.Content = null;
+            mainWindow.Content = _mainCanvas;
+            CreateGameBoardObjects();
         }
 
         private async Task PlayGame() {
@@ -104,7 +119,7 @@ namespace AzulBoardGame
                     tcs = new();
                     players[CurrentPlayer].SelectTiles();
                     await tcs.Task;
-                    CurrentPlayer = (CurrentPlayer + 1) % 4;
+                    CurrentPlayer = (CurrentPlayer + 1) % players.Count;
                 }
 
                 await WaitToContinue();
@@ -115,6 +130,11 @@ namespace AzulBoardGame
 
             foreach (Player player in players)
                 player.CalculateAdditionalPoints();
+
+            var winningPlayer = players.First(p => p.Points == players.Max(p => p.Points));
+
+            victoryPopup.Show(winningPlayer.Name, winningPlayer.Points);
+            gameStarted = false;
         }
 
         public void NotifyAboutCompletion() => tcs?.TrySetResult(true);

@@ -11,6 +11,8 @@ namespace AzulBoardGame.PlayerBoard
 
         private TextBlock nameText;
         private TextBlock turnMarkerText;
+
+        public string Name => nameText.Text;
         public PlayerNamePanel(Canvas playerCanvas, string name, Brush colourBrush) {
             _playerCanvas = playerCanvas;
 
