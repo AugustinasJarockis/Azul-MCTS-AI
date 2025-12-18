@@ -5,13 +5,13 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace AzulBoardGame.PlayerBoard
+namespace AzulBoardGame.PlayerBoard.PlayerTileRow
 {
-    internal class TileRow
+    internal class TileRow : ITileRow
     {
         private readonly Canvas _playerCanvas;
         private readonly ProcessingLine _processingLine;
-        private readonly TileBank _tileBank;
+        private readonly ITileBank _tileBank;
         private readonly double _xPos;
         private readonly double _yPos;
         private readonly int _capacity;
@@ -22,7 +22,6 @@ namespace AzulBoardGame.PlayerBoard
         private Panel innerCanvas;
 
         private List<Tile> rowTiles = [];
-
         public TileType? rowTileType => rowTiles.Count != 0 ? rowTiles[0].TileType : null;
         public bool IsFull => rowTiles.Count == _capacity;
         public bool IsEmpty => rowTiles.Count == 0;
@@ -36,7 +35,7 @@ namespace AzulBoardGame.PlayerBoard
             double width,
             int capacity,
             ProcessingLine processingLine,
-            TileBank tileBank,
+            ITileBank tileBank,
             Action<TileRow> takeSelectedTiles
             ) {
             _playerCanvas = playerCanvas;
@@ -79,6 +78,10 @@ namespace AzulBoardGame.PlayerBoard
                 if (e.LeftButton == MouseButtonState.Pressed)
                     TakeSelectedTiles(this);
             };
+        }
+
+        public TileRowState GetState(ProcessingLineState processingLineState, ITileBank tileBank) {
+            return new(_capacity, processingLineState, tileBank, [..rowTiles.Select(t => t.TileType)]);
         }
 
         public void AddTiles(List<Tile> tiles) {

@@ -13,7 +13,7 @@ namespace AzulBoardGame
         private Canvas _canvas;
         private ITileContainer _container;
 
-        private readonly List<BitmapImage> bitmapSources = [
+        private static readonly List<BitmapImage> bitmapSources = [
             new BitmapImage(new Uri("Textures/firstTile.png", UriKind.Relative)),
             new BitmapImage(new Uri("Textures/whiteTile.png", UriKind.Relative)),
             new BitmapImage(new Uri("Textures/brownTile.png", UriKind.Relative)),

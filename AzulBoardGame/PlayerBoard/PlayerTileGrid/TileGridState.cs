@@ -1,9 +1,10 @@
 ﻿using AzulBoardGame.Enums;
 using System.Collections.ObjectModel;
 
-namespace AzulBoardGame.PlayerBoard
+namespace AzulBoardGame.PlayerBoard.PlayerTileGrid
 {
-    internal class TileGrid {
+    internal class TileGridState : ITileGrid
+    {
         private ReadOnlyCollection<ReadOnlyCollection<TileType>> acceptedTiles = new([
             new([TileType.Cyan, TileType.Brown, TileType.White, TileType.Black, TileType.Red]),
             new([TileType.Red, TileType.Cyan, TileType.Brown, TileType.White, TileType.Black]),
@@ -12,7 +13,7 @@ namespace AzulBoardGame.PlayerBoard
             new([TileType.Brown, TileType.White, TileType.Black, TileType.Red, TileType.Cyan])
            ]);
 
-        private List<List<Tile?>> doneTiles = [
+        private List<List<TileType?>> doneTiles = [
             [null, null, null, null, null],
             [null, null, null, null, null],
             [null, null, null, null, null],
@@ -20,18 +21,28 @@ namespace AzulBoardGame.PlayerBoard
             [null, null, null, null, null]
            ];
 
-        public List<List<TileType>> DoneTiles => doneTiles.Select(r => r.Select(t => t.TileType).ToList()).ToList();
+        public List<List<TileType?>> DoneTiles => doneTiles;
 
-        public bool RowHasType(int rowNr, TileType type) => doneTiles[rowNr].Select(t => t?.TileType).Contains(type);
+        public TileGridState () {}
+        public TileGridState (List<List<TileType?>> doneTiles) {
+            this.doneTiles = [];
+            foreach (var line in doneTiles) {
+                this.doneTiles.Add([.. line]);
+            }
+        }
+
+        public TileGridState Copy() {
+            return new TileGridState(doneTiles);
+        }
+        public bool RowHasType(int rowNr, TileType type) => doneTiles[rowNr].Contains(type);
         public bool RowIsFull(int rowNr) => !doneTiles[rowNr].Contains(null);
         public bool CollumnIsFull(int collumnNr) => !doneTiles.Select(r => r[collumnNr]).Contains(null);
-        public bool TypeIsComplete(TileType type) => doneTiles.Count(r => r.Select(t => t?.TileType).Contains(type)) == 5;
+        public bool TypeIsComplete(TileType type) => doneTiles.Count(r => r.Contains(type)) == 5;
 
-        public int AddTile(int rowNr, Tile tile) {
+        public int AddTile(int rowNr, TileType tile) {
             for (int i = 0; i < doneTiles[rowNr].Count; i++) {
-                if (acceptedTiles[rowNr][i] == tile.TileType) {
+                if (acceptedTiles[rowNr][i] == tile) {
                     doneTiles[rowNr][i] = tile;
-                    tile.Move(0.525 + i * 0.093, 0.055 + rowNr * 0.1425);
                     return CountTilePoints(rowNr, i);
                 }
             }

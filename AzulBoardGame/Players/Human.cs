@@ -1,5 +1,5 @@
-﻿using AzulBoardGame.Enums;
-using AzulBoardGame.PlayerBoard;
+﻿using AzulBoardGame.GameTilePlates;
+using AzulBoardGame.Players.PlayerBase;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -14,7 +14,7 @@ namespace AzulBoardGame.Players
             TranslateTransform translateTransform,
             Action notifyAboutCompletion,
             TilePlates tilePlates,
-            TileBank tileBank,
+            ITileBank tileBank,
             string name,
             Brush nameColour,
             Key keyToFocus,
@@ -27,7 +27,7 @@ namespace AzulBoardGame.Players
 
         }
 
-        public override async Task SelectTiles() {
+        public override async Task SelectTiles() { // TODO: Check what tile human selects
             SetPlayersTurn();
             _tilePlates.EnableUserInput();
             _tilePlates.SetSelectionCallback(ManageSelectedTiles);

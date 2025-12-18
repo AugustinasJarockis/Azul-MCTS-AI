@@ -10,7 +10,7 @@ namespace AzulBoardGame.PlayerBoard
     internal class ProcessingLine
     {
         private readonly Canvas _playerCanvas;
-        private readonly TileBank _tileBank;
+        private readonly ITileBank _tileBank;
 
         private readonly Action DiscardSelectedTiles;
 
@@ -19,7 +19,7 @@ namespace AzulBoardGame.PlayerBoard
 
         private List<Tile> processedTiles = [];
 
-        public ProcessingLine(Canvas playerCanvas, TileBank tileBank, Action discardSelectedTiles) { 
+        public ProcessingLine(Canvas playerCanvas, ITileBank tileBank, Action discardSelectedTiles) { 
             _playerCanvas = playerCanvas;
             _tileBank = tileBank;
             DiscardSelectedTiles = discardSelectedTiles;
@@ -57,13 +57,18 @@ namespace AzulBoardGame.PlayerBoard
                     DiscardSelectedTiles();
             };
         }
+
+        public ProcessingLineState GetState(ITileBank tileBank) {
+            return new(tileBank, [..processedTiles.Select(t => t.TileType)]);
+        }
         public void AddTile(Tile tile) {
             if (processedTiles.Count < 7) {
                 tile.Move(0.025 + processedTiles.Count * 0.1, 0.88);
                 processedTiles.Add(tile);
             }
             else {
-                _tileBank.DiscardTiles(tile.TileType);
+                if (tile.TileType != TileType.First)
+                    _tileBank.DiscardTiles(tile.TileType);
                 tile.Destroy();
             }
         }

@@ -2,9 +2,9 @@
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace AzulBoardGame.PlayerBoard
+namespace AzulBoardGame.PlayerBoard.PointCounter
 {
-    internal class PointCounter
+    internal class PointCounter : IPointCounter
     {
         private readonly Canvas _playerCanvas;
 

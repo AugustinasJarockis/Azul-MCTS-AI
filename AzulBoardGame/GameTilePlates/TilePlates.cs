@@ -1,12 +1,13 @@
 ﻿using AzulBoardGame.Enums;
 using AzulBoardGame.Extensions;
-using System.Runtime.CompilerServices;
+using AzulBoardGame.GamePlates;
+using AzulBoardGame.Players.MCTS;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
-namespace AzulBoardGame
+namespace AzulBoardGame.GameTilePlates
 {
     internal class TilePlates : ITileContainer
     {
@@ -33,8 +34,9 @@ namespace AzulBoardGame
 
         private Action<List<Tile>>? TileSelectionCallback = null;
 
-        public List<Plate> Plates { get; set; } = [];
-        public int StartingPlayer { get; private set; } = 0;
+        private List<Plate> plates = [];
+        public List<IPlate> Plates => [.. plates];
+        public int StartingPlayer { get; set; } = 0;
         public List<TileType> CenterTileTypes => [..centerTiles.Select(t => t.TileType)];
         public int CenterTileCount => centerTiles.Count;
         public int TotalTileCount => CenterTileCount + Plates.Sum(p => p.TileCount);
@@ -46,7 +48,7 @@ namespace AzulBoardGame
             TranslateTransform translateTransform, 
             GameManager gameManager,
             Key keyToFocus, 
-            int tileCount
+            int plateCount
             ) {
             _mainCanvas = mainCanvas;
             _scaleTransform = scaleTransform;
@@ -62,12 +64,12 @@ namespace AzulBoardGame
 
             centerCanvas.Loaded += (s, e) => {
                 centerCanvas.Dispatcher.BeginInvoke(() => {
-                    for (int i = 0; i < tileCount; i++)
-                        Plates.Add(new(
+                    for (int i = 0; i < plateCount; i++)
+                        plates.Add(new Plate(
                             centerCanvas,
                             TransferTilesToCenter,
-                            (Math.Cos((2 * Math.PI / tileCount) * i) + 1) / 2,
-                            (Math.Sin((2 * Math.PI / tileCount) * i) + 1) / 2
+                            (Math.Cos(2 * Math.PI / plateCount * i) + 1) / 2,
+                            (Math.Sin(2 * Math.PI / plateCount * i) + 1) / 2
                             ));
                 },
                     DispatcherPriority.Loaded
@@ -82,9 +84,13 @@ namespace AzulBoardGame
             };
         }
 
-        public void TransferTilesToCenter(List<Tile> tiles) {            
+        public TilePlatesState GetState(GameState gameState) {
+            return new(gameState, firstTile != null, [.. centerTiles.Select(t => t.TileType)], plates, StartingPlayer);
+        }
+
+        private void TransferTilesToCenter(List<Tile> tiles) {            
+            int firstTileCount = FirstTileExists ? 1 : 0;
             foreach (Tile tile in tiles) {
-                int firstTileCount = FirstTileExists ? 1 : 0;
 
                 if (CenterTileCount + firstTileCount > 29)
                     throw new Exception("The number of center tiles should never exceed 28");
@@ -98,8 +104,7 @@ namespace AzulBoardGame
         }
 
         public void RearrangeCenterTiles() {
-            if (firstTile != null)
-                firstTile.Move(0.5, 0.5);
+            firstTile?.Move(0.5, 0.5);
 
             int firstTileCount = firstTile != null ? 1 : 0;
 
@@ -111,9 +116,9 @@ namespace AzulBoardGame
 
         public void RefreshPlates(List<TileType> tileTypes) {
             for (int i = 0; i < (tileTypes.Count + 3) / 4; i++)
-                Plates[i].PlaceTiles([.. tileTypes.Skip(i * 4).Take(4)]);
+                plates[i].PlaceTiles([.. tileTypes.Skip(i * 4).Take(4)]);
 
-            firstTile = firstTile ?? new Tile(centerCanvas, this, TileType.First, 0.5, 0.5, tileSize);
+            firstTile ??= new Tile(centerCanvas, this, TileType.First, 0.5, 0.5, tileSize);
         }
 
         public void SelectTiles(TileType type) {
@@ -135,13 +140,11 @@ namespace AzulBoardGame
 
             RearrangeCenterTiles();
 
-            if (TileSelectionCallback != null)
-                TileSelectionCallback(selectedTiles);
+            TileSelectionCallback?.Invoke(selectedTiles);
         }
 
         public void HighlightTiles(TileType type) {
-            if (firstTile != null)
-                firstTile.ShowBorder();
+            firstTile?.ShowBorder();
             
             foreach (Tile tile in centerTiles) {
                 if (tile.TileType == type)
@@ -150,8 +153,7 @@ namespace AzulBoardGame
         }
 
         public void UnhighlightTiles(TileType type) {
-            if (firstTile != null)
-                firstTile.HideBorder();
+            firstTile?.HideBorder();
 
             foreach (Tile tile in centerTiles) {
                 if (tile.TileType == type)
@@ -160,14 +162,14 @@ namespace AzulBoardGame
         }
 
         public void EnableUserInput() {
-            foreach (Plate plate in Plates)
+            foreach (Plate plate in plates)
                 plate.EnableUserInput();
 
             foreach (Tile tile in centerTiles)
                 tile.StartMouseInput();
         }
         public void DisableUserInput() {
-            foreach(Plate plate in Plates)
+            foreach(Plate plate in plates)
                 plate.DisableUserInput();
 
             foreach (Tile tile in centerTiles)
@@ -176,13 +178,13 @@ namespace AzulBoardGame
 
         public void SetSelectionCallback(Action<List<Tile>> tileSelectionCallback) {
             TileSelectionCallback = tileSelectionCallback;
-            foreach (Plate plate in Plates) {
+            foreach (Plate plate in plates) {
                 plate.SetSelectionCallback(tileSelectionCallback);
             }
         }
         public void ClearSelectionCallback() {
             TileSelectionCallback = null;
-            foreach (Plate plate in Plates) {
+            foreach (Plate plate in plates) {
                 plate.ClearSelectionCallback();
             }
         }
@@ -192,11 +194,11 @@ namespace AzulBoardGame
 
             _translateTransform.X = 
                 -Canvas.GetLeft(centerCanvas) 
-                + (centerCanvas.ActualWidth * ((1 / canvasViewRatio) * _mainCanvas.ActualWidth / _mainCanvas.ActualHeight - 1)) / 2;
+                + centerCanvas.ActualWidth * (1 / canvasViewRatio * _mainCanvas.ActualWidth / _mainCanvas.ActualHeight - 1) / 2;
             
             _translateTransform.Y = 
                 -Canvas.GetTop(centerCanvas)
-                + (centerCanvas.ActualWidth * (1 / canvasViewRatio - 1)) / 2;
+                + centerCanvas.ActualWidth * (1 / canvasViewRatio - 1) / 2;
 
             _scaleTransform.ScaleY = canvasViewRatio * _mainCanvas.ActualHeight / centerCanvas.ActualHeight;
             _scaleTransform.ScaleX = _scaleTransform.ScaleY;

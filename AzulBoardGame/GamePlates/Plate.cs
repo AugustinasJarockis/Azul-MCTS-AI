@@ -4,9 +4,9 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace AzulBoardGame
+namespace AzulBoardGame.GamePlates
 {
-    internal class Plate : ITileContainer
+    internal class Plate : IPlate, ITileContainer
     {
         private readonly Canvas _centerCanvas;
 
@@ -43,6 +43,10 @@ namespace AzulBoardGame
 
             _plateCanvas.Children.Add(plateImage);
             _centerCanvas.Children.Add(_plateCanvas);
+        }
+
+        public PlateState GetState(Action <List<TileType>> transferFunc) {
+            return new(transferFunc, [.. tiles.Select(t => t.TileType)]);
         }
 
         public void PlaceTiles(List<TileType> tileTypes) {

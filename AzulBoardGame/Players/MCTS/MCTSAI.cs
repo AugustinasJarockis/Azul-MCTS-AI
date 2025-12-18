@@ -1,23 +1,31 @@
-﻿using AzulBoardGame.Extensions;
+﻿using AzulBoardGame.Enums;
+using AzulBoardGame.Extensions;
 using AzulBoardGame.GameTilePlates;
-using AzulBoardGame.PlayerBoard.PlayerTileRow;
 using AzulBoardGame.Players.PlayerBase;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace AzulBoardGame.Players
+namespace AzulBoardGame.Players.MCTS
 {
-    internal class RandomAI : Player
+    internal class MCTSAI : Player
     {
-        private Random rnd = new(DateTime.Now.Microsecond * DateTime.Now.Millisecond);
+        private static readonly int timeAllotedMs = 1000;
+
         private readonly bool _pauseBetweenChoices;
+        private readonly GameManager _gameManager;
+
+        private (byte plate, TileType type, byte row) move;
+        private GameState? gameState = null;
 
         private Image? waitButton = null;
         private TaskCompletionSource<bool>? waiter = null;
-        public RandomAI(
+
+        public MCTSAI(
+            GameManager gameManager,
             Canvas mainCanvas,
             ScaleTransform scaleTransform,
             TranslateTransform translateTransform,
@@ -34,6 +42,7 @@ namespace AzulBoardGame.Players
             )
             : base(mainCanvas, scaleTransform, translateTransform, notifyAboutCompletion, tilePlates, tileBank, name, nameColour, keyToFocus, xPos, yPos, size) {
 
+            _gameManager = gameManager;
             _pauseBetweenChoices = pauseBetweenChoices;
 
             if (_pauseBetweenChoices) {
@@ -62,45 +71,39 @@ namespace AzulBoardGame.Players
             SetPlayersTurn();
             _tilePlates.SetSelectionCallback(ManageSelectedTiles);
 
-            int centerTilesExist = _tilePlates.CenterTileCount != 0 ? 1 : 0;
-
-            var plates = _tilePlates.Plates.Where(p => !p.IsEmpty).ToList();
-            int selection = rnd.Next(plates.Count + centerTilesExist);
-
-            if (selection == 0 && centerTilesExist != 0) {
-                var centerTileTypes = _tilePlates.CenterTileTypes;
-                int tileToSelect = rnd.Next(_tilePlates.CenterTileTypes.Count);
-                var selectedType = centerTileTypes[tileToSelect];
-                MoveMade.plateNr = 0;
-                _tilePlates.SelectTiles(selectedType);
+            // Logic
+            if (gameState == null) {
+                gameState = _gameManager.GetState(_gameManager.CurrentPlayer);
             }
             else {
-                int tileToSelect = rnd.Next(4);
-                var selectedType = plates[selection - centerTilesExist].TileTypes[tileToSelect];
-                MoveMade.plateNr = (byte)(_tilePlates.Plates.IndexOf(plates[selection - centerTilesExist]) + 1);
-                plates[selection - centerTilesExist].SelectTiles(selectedType);
+                gameState = gameState.GetSyncWithManager(_gameManager.PlayerCount, _gameManager);
+            }
+
+            var timer = Stopwatch.StartNew();
+            while (timer.ElapsedMilliseconds < timeAllotedMs) {
+                gameState.PlayOut(true);
+            }
+            timer.Stop();
+
+            Console.WriteLine("Nodes visited: " + gameState.EndsReached);
+            move = gameState.GetBestMove();
+
+            MoveMade = move;
+            if (move.plate == 0) {
+                _tilePlates.SelectTiles(move.type);
+            }
+            else {
+                _tilePlates.Plates[move.plate - 1].SelectTiles(move.type);
             }
         }
 
         public override async Task SelectRow() {
             await WaitToContinue();
-            List<TileRow> possibleRows = [];
             
-            for (int i = 0; i < tileRows.Count; i++) {
-                if (!tileRows[i].IsFull
-                    && (tileRows[i].rowTileType == null || tileRows[i].rowTileType == selectedTiles[0].TileType)
-                    && !tileGrid.RowHasType(i, selectedTiles[0].TileType))
-
-                    possibleRows.Add(tileRows[i]);
-            }
-
-            if (possibleRows.Count > 0) {
-                int rowToSelect = rnd.Next(possibleRows.Count);
-                TakeSelectedTiles(possibleRows[rowToSelect]);
-            }
-            else {
+            if (move.row == 5)
                 DiscardSelectedTiles();
-            }
+            else
+                TakeSelectedTiles(tileRows[move.row]);
         }
 
         protected override void RemoveSelectedTiles() {

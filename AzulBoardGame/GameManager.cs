@@ -1,10 +1,17 @@
-﻿using AzulBoardGame.Extensions;
+﻿using AzulBoardGame.Enums;
+using AzulBoardGame.Extensions;
+using AzulBoardGame.GameTilePlates;
 using AzulBoardGame.Players;
+using AzulBoardGame.Players.MCTS;
+using AzulBoardGame.Players.PlayerBase;
+using System.IO;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace AzulBoardGame
 {
@@ -30,7 +37,11 @@ namespace AzulBoardGame
 
         private TaskCompletionSource<bool> tcs;
 
+        public bool runTests = true;
+
         public int CurrentPlayer { get; private set; } = 0;
+        public int PlayerCount => players.Count;
+        public (byte plate, TileType type, byte row)?[] recentMoves = [null, null, null, null]; 
         public GameManager(Canvas mainCanvas, ScaleTransform scaleTransform, TranslateTransform translateTransform) {
             _mainCanvas = mainCanvas;
             _scaleTransform = scaleTransform;
@@ -43,6 +54,10 @@ namespace AzulBoardGame
                     StartGame();
                 }
             };
+
+            if (runTests) {
+                Test(100, "test.csv");
+            }
         }
 
         private void CreateGameBoardObjects() {
@@ -50,10 +65,16 @@ namespace AzulBoardGame
             tilePlates = new TilePlates(_mainCanvas, _scaleTransform, _translateTransform, this, Key.NumPad5, plateCount);
             tileBank = new TileBank();
 
+            players.Add(new MCTSAI(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "MCTSAI", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35));
+            players.Add(new HeuristicAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Heuristic AI", Brushes.Red, Key.NumPad1, 0.18, 0.18, 0.35));
+            //players.Add(new MCTSAI(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "HeuristicAI", Brushes.Blue, Key.NumPad3, 0.18, 0.18, 0.35, true));
+            //players.Add(new MCTSAI(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI2", Brushes.Green, Key.NumPad4, 0.82, 0.18, 0.35, true));
+            //players.Add(new MCTSAI(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI3", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35, true));
+
             //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "RealPlayer", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35));
-            players.Add(new HeuristicAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "HeuristicAI", Brushes.Blue, Key.NumPad3, 0.18, 0.18, 0.35));
-            players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI2", Brushes.Green, Key.NumPad4, 0.82, 0.18, 0.35));
-            //players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI3", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35));
+            //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "HeuristicAI", Brushes.Blue, Key.NumPad3, 0.18, 0.18, 0.35));
+            //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI2", Brushes.Green, Key.NumPad4, 0.82, 0.18, 0.35));
+            //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI3", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35));
 
             if (waitBeforeTurnEnd) {
                 waitButton = new Image {
@@ -92,11 +113,16 @@ namespace AzulBoardGame
             startButton.MouseLeave += (s, a) => startButton.Opacity = 1.0;
         }
 
+        public GameState GetState(int playerOfInterest) {
+            // TODO: determinizmas
+            return new (tileBank.GetDeterministicCopy(), tilePlates, players, CurrentPlayer, playerOfInterest);
+        }
+
         public void StartGame() {
             gameStarted = true;
             startButton.Visibility = Visibility.Hidden;
 
-            PlayGame();
+            RunMatch();
         }
 
         public void ResetGame() {
@@ -109,6 +135,45 @@ namespace AzulBoardGame
             CreateGameBoardObjects();
         }
 
+        private async Task Test(int count, string filename) {
+            File.Create(filename);
+
+            for (int i = 0; i < count; i++) {
+                int startingPlayer = i / ((count + players.Count - 1) / players.Count); 
+                tilePlates.StartingPlayer = startingPlayer;
+                startButton.Visibility = Visibility.Hidden;
+                gameStarted = true;
+                await Task.Delay(2000);
+                await PlayGame();
+                WriteResults(filename, startingPlayer);
+                ResetGame();
+            }
+        } 
+
+        private void WriteResults(string filename, int startingPlayer) {
+            string textToAppend = "";
+            string delimiter = "; ";
+            textToAppend += players.Count  + delimiter;
+            textToAppend += startingPlayer + delimiter;
+            foreach (var player in players) {
+                textToAppend += player.Name + delimiter;
+                textToAppend += player.ToString() + delimiter;
+                textToAppend += player.Points + delimiter;
+            }
+
+            textToAppend += players.IndexOf(players.MaxBy(p => p.Points)).ToString() + '\n';
+
+            File.AppendAllText(filename, textToAppend);
+        }
+
+        private async Task RunMatch() {
+            await PlayGame();
+            var winningPlayer = players.First(p => p.Points == players.Max(p => p.Points));
+
+            victoryPopup.Show(winningPlayer.Name, winningPlayer.Points);
+            gameStarted = false;
+        }
+
         private async Task PlayGame() {
             while (!players.Any(p => p.HasFinished())) {
                 var tileTypes = tileBank.RefreshTiles(plateCount);
@@ -119,6 +184,9 @@ namespace AzulBoardGame
                     tcs = new();
                     players[CurrentPlayer].SelectTiles();
                     await tcs.Task;
+                    _mainCanvas.InvalidateVisual();
+                    await Dispatcher.Yield(DispatcherPriority.Render);
+                    recentMoves[CurrentPlayer] = players[CurrentPlayer].MoveMade;
                     CurrentPlayer = (CurrentPlayer + 1) % players.Count;
                 }
 
@@ -130,11 +198,6 @@ namespace AzulBoardGame
 
             foreach (Player player in players)
                 player.CalculateAdditionalPoints();
-
-            var winningPlayer = players.First(p => p.Points == players.Max(p => p.Points));
-
-            victoryPopup.Show(winningPlayer.Name, winningPlayer.Points);
-            gameStarted = false;
         }
 
         public void NotifyAboutCompletion() => tcs?.TrySetResult(true);
