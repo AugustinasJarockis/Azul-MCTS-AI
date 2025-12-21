@@ -1,11 +1,15 @@
 ﻿using AzulBoardGame.Enums;
 using AzulBoardGame.GameTilePlates;
+using AzulBoardGame.Players.MCTS.StateEvaluators;
 using AzulBoardGame.Players.PlayerBase;
 
 namespace AzulBoardGame.Players.MCTS
 {
     internal class GameState {
         static private Random rnd = new(DateTime.Now.Microsecond * DateTime.Now.Millisecond);
+
+        private readonly IStateEvaluator _stateEvaluator;
+
         private int seed = rnd.Next();
         private List<GameState> reachableStates = [];
 
@@ -30,7 +34,9 @@ namespace AzulBoardGame.Players.MCTS
         };
         public int CurrentPlayer { get; private set; } = 0;
 
-        public GameState(int currentPlayer) {
+        public GameState(int currentPlayer, IStateEvaluator stateEvaluator) {
+            _stateEvaluator = stateEvaluator;
+            
             tilePlates = new TilePlatesState(this, plateCount);
             tileBank = new DeterministicTileBank();
             tileBank.TileSelectionOutcomeSeed = seed;
@@ -50,8 +56,11 @@ namespace AzulBoardGame.Players.MCTS
             List<Player> players,
             int currentPlayer,
             int playerOfInterest,
+            IStateEvaluator stateEvaluator,
             int? seed = null
             ) {
+            _stateEvaluator = stateEvaluator;
+
             this.tilePlates = tilePlates.GetState(this);
             this.tileBank = tileBank.Copy();
             if (seed != null)
@@ -72,8 +81,11 @@ namespace AzulBoardGame.Players.MCTS
             List<PlayerState<HeuristicStateDelver>> players, 
             int currentPlayer,
             int playerOfInterest,
+            IStateEvaluator stateEvaluator,
             int? seed = null
             ) {
+            _stateEvaluator = stateEvaluator;
+
             this.tilePlates = tilePlates.Copy(this);
             this.tileBank = tileBank.Copy();
             if (seed != null)
@@ -89,12 +101,12 @@ namespace AzulBoardGame.Players.MCTS
         }
 
         public GameState Copy() {
-            return new (tileBank, tilePlates, players, (CurrentPlayer + 1) % players.Count, playerOfInterest, seed);
+            return new (tileBank, tilePlates, players, (CurrentPlayer + 1) % players.Count, playerOfInterest, _stateEvaluator, seed);
         }
 
         public GameState GetSyncWithManager(int playerCount, GameManager gameManager) {
             if (tilePlates.TotalTileCount == 0)
-                return gameManager.GetState(playerOfInterest);
+                return gameManager.GetState(playerOfInterest, _stateEvaluator);
 
             if (playerCount == 0)
                 return this;
@@ -109,10 +121,10 @@ namespace AzulBoardGame.Players.MCTS
                     return reachableStates[indexOfMove].GetSyncWithManager(playerCount - 1, gameManager);
                 }
             }
-            return gameManager.GetState(playerOfInterest);
+            return gameManager.GetState(playerOfInterest, _stateEvaluator);
         }
 
-        public (byte, TileType, byte) GetBestMove() => possibleMoves[reachableStates.IndexOf(reachableStates.MaxBy(s => s.Score))];
+        public (byte, TileType, byte) GetBestMove() => _stateEvaluator.GetBestMove(possibleMoves, reachableStates);
 
         public void MakeRandomMove((byte, TileType, byte) move) {
             players[(CurrentPlayer + players.Count - 1) % players.Count].SelectTiles(move);
@@ -144,7 +156,7 @@ namespace AzulBoardGame.Players.MCTS
                 foreach (var player in players)
                     player.CalculateAdditionalPoints();
                 
-                SetEndPositionScore();
+                Score = _stateEvaluator.GetEndPositionScore(playerOfInterest, players);
                 EndsReached = 1;
                 return;
             }
@@ -168,30 +180,8 @@ namespace AzulBoardGame.Players.MCTS
                 reachableStates.Add(newState);
             }
 
-            SetPositionScore();
+            Score = _stateEvaluator.GetPositionScore(reachableStates);
             EndsReached++;
-        }
-
-        protected void SetPositionScore() {
-            double scoreSum = 0;
-            foreach (var state in reachableStates) {
-                scoreSum += state.Score;
-            }
-            Score = scoreSum / reachableStates.Count;
-            //Score = reachableStates.Max(s => s.Score);
-        }
-
-        protected void SetEndPositionScore() {
-            var orderedPlayers = players.OrderBy(p => p.Points);
-            var winningPlayer = orderedPlayers.First();
-            bool isWinner = players.IndexOf(winningPlayer) == playerOfInterest;
-            if (isWinner) {
-                var secondPlayer = orderedPlayers.Skip(1).First();
-                Score = winningPlayer.Points - secondPlayer.Points;
-            }
-            else {
-                Score = players[playerOfInterest].Points - winningPlayer.Points;
-            }
         }
     }
 }

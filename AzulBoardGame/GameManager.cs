@@ -3,9 +3,10 @@ using AzulBoardGame.Extensions;
 using AzulBoardGame.GameTilePlates;
 using AzulBoardGame.Players;
 using AzulBoardGame.Players.MCTS;
+using AzulBoardGame.Players.MCTS.MCTSVariants;
+using AzulBoardGame.Players.MCTS.StateEvaluators;
 using AzulBoardGame.Players.PlayerBase;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -56,7 +57,7 @@ namespace AzulBoardGame
             };
 
             if (runTests) {
-                Test(100, "test.csv");
+                Test(1000, "HeuristicVSRandom.csv");
             }
         }
 
@@ -65,8 +66,11 @@ namespace AzulBoardGame
             tilePlates = new TilePlates(_mainCanvas, _scaleTransform, _translateTransform, this, Key.NumPad5, plateCount);
             tileBank = new TileBank();
 
-            players.Add(new MCTSAI(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "MCTSAI", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35));
-            players.Add(new HeuristicAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Heuristic AI", Brushes.Red, Key.NumPad1, 0.18, 0.18, 0.35));
+            //players.Add(new MCTSAIScoreDiffAvg(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "MCTSAI", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35));
+            //players.Add(new MCTSAI(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "MCTSAI2", Brushes.Red, Key.NumPad1, 0.82, 0.18, 0.35));
+            //players.Add(new MCTSAI(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "MCTSAI3", Brushes.Red, Key.NumPad1, 0.82, 0.82, 0.35));
+            //players.Add(new MCTSAIVisitTotalMax(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Visit Total Max", Brushes.Black, Key.NumPad2, 0.18, 0.18, 0.35));
+            //players.Add(new HeuristicAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Žaidėjas nr. 1", Brushes.Black, Key.NumPad1, 0.18, 0.18, 0.35));
             //players.Add(new MCTSAI(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "HeuristicAI", Brushes.Blue, Key.NumPad3, 0.18, 0.18, 0.35, true));
             //players.Add(new MCTSAI(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI2", Brushes.Green, Key.NumPad4, 0.82, 0.18, 0.35, true));
             //players.Add(new MCTSAI(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI3", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35, true));
@@ -75,6 +79,10 @@ namespace AzulBoardGame
             //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "HeuristicAI", Brushes.Blue, Key.NumPad3, 0.18, 0.18, 0.35));
             //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI2", Brushes.Green, Key.NumPad4, 0.82, 0.18, 0.35));
             //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI3", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35));
+
+            // Heuristic vs Random
+            players.Add(new HeuristicAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Heuristic", Brushes.Green, Key.NumPad1, 0.82, 0.18, 0.35));
+            players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Random", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35));
 
             if (waitBeforeTurnEnd) {
                 waitButton = new Image {
@@ -113,9 +121,9 @@ namespace AzulBoardGame
             startButton.MouseLeave += (s, a) => startButton.Opacity = 1.0;
         }
 
-        public GameState GetState(int playerOfInterest) {
+        public GameState GetState(int playerOfInterest, IStateEvaluator stateEvaluator) {
             // TODO: determinizmas
-            return new (tileBank.GetDeterministicCopy(), tilePlates, players, CurrentPlayer, playerOfInterest);
+            return new (tileBank.GetDeterministicCopy(), tilePlates, players, CurrentPlayer, playerOfInterest, stateEvaluator);
         }
 
         public void StartGame() {

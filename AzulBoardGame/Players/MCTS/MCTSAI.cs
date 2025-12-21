@@ -1,6 +1,7 @@
 ﻿using AzulBoardGame.Enums;
 using AzulBoardGame.Extensions;
 using AzulBoardGame.GameTilePlates;
+using AzulBoardGame.Players.MCTS.StateEvaluators;
 using AzulBoardGame.Players.PlayerBase;
 using System.Diagnostics;
 using System.Windows;
@@ -17,6 +18,7 @@ namespace AzulBoardGame.Players.MCTS
 
         private readonly bool _pauseBetweenChoices;
         private readonly GameManager _gameManager;
+        private readonly IStateEvaluator _stateEvaluator;
 
         private (byte plate, TileType type, byte row) move;
         private GameState? gameState = null;
@@ -25,6 +27,7 @@ namespace AzulBoardGame.Players.MCTS
         private TaskCompletionSource<bool>? waiter = null;
 
         public MCTSAI(
+            IStateEvaluator evaluator,
             GameManager gameManager,
             Canvas mainCanvas,
             ScaleTransform scaleTransform,
@@ -42,6 +45,7 @@ namespace AzulBoardGame.Players.MCTS
             )
             : base(mainCanvas, scaleTransform, translateTransform, notifyAboutCompletion, tilePlates, tileBank, name, nameColour, keyToFocus, xPos, yPos, size) {
 
+            _stateEvaluator = evaluator;
             _gameManager = gameManager;
             _pauseBetweenChoices = pauseBetweenChoices;
 
@@ -73,7 +77,7 @@ namespace AzulBoardGame.Players.MCTS
 
             // Logic
             if (gameState == null) {
-                gameState = _gameManager.GetState(_gameManager.CurrentPlayer);
+                gameState = _gameManager.GetState(_gameManager.CurrentPlayer, _stateEvaluator);
             }
             else {
                 gameState = gameState.GetSyncWithManager(_gameManager.PlayerCount, _gameManager);
