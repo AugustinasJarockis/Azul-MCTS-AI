@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AzulBoardGame"
         mc:Ignorable="d"
-        Title="MainWindow" Height="750" Width="1000">
+        Title="Azul" Height="750" Width="1000">
     <Canvas x:Name="MainCanvas" Focusable="True">
         <Canvas.Background>
             <ImageBrush ImageSource="pack://application:,,,/Textures/background.jpg" Stretch="UniformToFill" Opacity="0.5"/>

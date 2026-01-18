@@ -36,7 +36,7 @@ namespace AzulBoardGame.Players
         public override async Task SelectRow() {
             for (int i = 0; i < tileRows.Count; i++) {
                 if (!tileRows[i].IsFull
-                    && (tileRows[i].rowTileType == null || tileRows[i].rowTileType == selectedTiles[0].TileType)
+                    && (tileRows[i].RowTileType == null || tileRows[i].RowTileType == selectedTiles[0].TileType)
                     && !tileGrid.RowHasType(i, selectedTiles[0].TileType))
 
                     tileRows[i].StartMouseInput();

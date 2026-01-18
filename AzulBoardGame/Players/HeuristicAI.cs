@@ -70,14 +70,14 @@ namespace AzulBoardGame.Players
         }
 
         private bool CanReasonablyFitIntoRow(TileType type, int count, int degreeOfFreedom, ITileRow row) => 
-            (row.rowTileType == type || row.IsEmpty) 
+            (row.RowTileType == type || row.IsEmpty) 
             && row.FreeSlotCount >= count - degreeOfFreedom;
         private bool CanReasonablyFitIntoRow(TileType type, int count, int degreeOfFreedom, int rowNr) => 
-            (tileRows[rowNr].rowTileType == type || tileRows[rowNr].IsEmpty) 
+            (tileRows[rowNr].RowTileType == type || tileRows[rowNr].IsEmpty) 
             && tileRows[rowNr].FreeSlotCount >= count - degreeOfFreedom
             && !tileGrid.RowHasType(rowNr, type);
         private bool CanFitIntoRow(TileType type, int count, ITileRow row) => 
-            (row.rowTileType == type || row.IsEmpty) 
+            (row.RowTileType == type || row.IsEmpty) 
             && row.FreeSlotCount >= count;
 
         public override async Task SelectTiles() {
@@ -143,7 +143,7 @@ namespace AzulBoardGame.Players
 
             for (int rowNr = 0; rowNr < tileRows.Count; rowNr++) {
                 if (!tileRows[rowNr].IsFull
-                    && (tileRows[rowNr].rowTileType == null || tileRows[rowNr].rowTileType == selectedTiles[0].TileType)
+                    && (tileRows[rowNr].RowTileType == null || tileRows[rowNr].RowTileType == selectedTiles[0].TileType)
                     && !tileGrid.RowHasType(rowNr, selectedTiles[0].TileType))
 
                     possibleRows.Add(tileRows[rowNr]);

@@ -25,7 +25,7 @@ namespace AzulBoardGame.Players.MCTS
         private TilePlatesState tilePlates;
 
         private int playerOfInterest = 0; 
-        private int playerCount => players.Count == 0 ? 4 : players.Count;
+        private int playerCount => players.Count == 0 ? 2 : players.Count;
         private int plateCount => (playerCount) switch {
             2 => 5,
             3 => 7,
@@ -111,10 +111,11 @@ namespace AzulBoardGame.Players.MCTS
             if (playerCount == 0)
                 return this;
 
-            var recentMove = gameManager.recentMoves[gameManager.PlayerCount - playerCount];
+            var playerToMakeAMove = (gameManager.PlayerCount - playerCount + CurrentPlayer) % gameManager.PlayerCount;
+            var recentMove = gameManager.recentMoves[playerToMakeAMove];
 
             if (recentMove != null
-                && possibleMoves.Contains(((byte, TileType, byte))gameManager.recentMoves[gameManager.PlayerCount - playerCount]!)
+                && possibleMoves.Contains(((byte, TileType, byte))gameManager.recentMoves[playerToMakeAMove]!)
             ) {
                 var indexOfMove = possibleMoves.IndexOf(((byte, TileType, byte))recentMove);
                 if (indexOfMove < reachableStates.Count) {
@@ -127,13 +128,13 @@ namespace AzulBoardGame.Players.MCTS
         public (byte, TileType, byte) GetBestMove() => _stateEvaluator.GetBestMove(possibleMoves, reachableStates);
 
         public void MakeRandomMove((byte, TileType, byte) move) {
-            players[(CurrentPlayer + players.Count - 1) % players.Count].SelectTiles(move);
+            players[(CurrentPlayer + 1) % players.Count].SelectTiles(move);
             moveMade = move;
             possibleMoves = players[CurrentPlayer].GetPossibleMoves();
         }
 
         public void MakeHeuristicMove() {
-            moveMade = players[(CurrentPlayer + players.Count - 1) % players.Count].SelectTiles();
+            moveMade = players[(CurrentPlayer + 1) % players.Count].SelectTiles();
             possibleMoves = players[CurrentPlayer].GetPossibleMoves();
         }
 

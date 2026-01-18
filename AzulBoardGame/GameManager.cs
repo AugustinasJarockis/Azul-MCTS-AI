@@ -57,7 +57,8 @@ namespace AzulBoardGame
             };
 
             if (runTests) {
-                Test(1000, "HeuristicVSRandom.csv");
+                Test(900, "RepeatedBestAgentTests.csv");
+                //RunTests();
             }
         }
 
@@ -66,23 +67,19 @@ namespace AzulBoardGame
             tilePlates = new TilePlates(_mainCanvas, _scaleTransform, _translateTransform, this, Key.NumPad5, plateCount);
             tileBank = new TileBank();
 
-            //players.Add(new MCTSAIScoreDiffAvg(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "MCTSAI", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35));
-            //players.Add(new MCTSAI(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "MCTSAI2", Brushes.Red, Key.NumPad1, 0.82, 0.18, 0.35));
-            //players.Add(new MCTSAI(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "MCTSAI3", Brushes.Red, Key.NumPad1, 0.82, 0.82, 0.35));
-            //players.Add(new MCTSAIVisitTotalMax(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Visit Total Max", Brushes.Black, Key.NumPad2, 0.18, 0.18, 0.35));
-            //players.Add(new HeuristicAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Žaidėjas nr. 1", Brushes.Black, Key.NumPad1, 0.18, 0.18, 0.35));
-            //players.Add(new MCTSAI(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "HeuristicAI", Brushes.Blue, Key.NumPad3, 0.18, 0.18, 0.35, true));
-            //players.Add(new MCTSAI(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI2", Brushes.Green, Key.NumPad4, 0.82, 0.18, 0.35, true));
-            //players.Add(new MCTSAI(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI3", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35, true));
+            //Agents to be tested
+            players.Add(new MCTSAIScoreDiffAvg(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "ScoreDiffAvg", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35));
+            players.Add(new MCTSAIScoreTotalAvg(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "ScoreTotalAvg", Brushes.Blue, Key.NumPad2, 0.18, 0.18, 0.35));
+            //players.Add(new HeuristicAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Heuristic", Brushes.Blue, Key.NumPad2, 0.18, 0.18, 0.35));
 
-            //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "RealPlayer", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35));
-            //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "HeuristicAI", Brushes.Blue, Key.NumPad3, 0.18, 0.18, 0.35));
-            //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI2", Brushes.Green, Key.NumPad4, 0.82, 0.18, 0.35));
-            //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "AI3", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35));
+            //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Žaidėjas 1", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35));
+            //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Žaidėjas 2", Brushes.Blue, Key.NumPad3, 0.18, 0.18, 0.35));
+            //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Žaidėjas 3", Brushes.Green, Key.NumPad4, 0.82, 0.18, 0.35));
+            //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Žaidėjas 4", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35));
 
             // Heuristic vs Random
-            players.Add(new HeuristicAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Heuristic", Brushes.Green, Key.NumPad1, 0.82, 0.18, 0.35));
-            players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Random", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35));
+            //players.Add(new HeuristicAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Heuristic", Brushes.Green, Key.NumPad1, 0.82, 0.18, 0.35));
+            //players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Random", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35));
 
             if (waitBeforeTurnEnd) {
                 waitButton = new Image {
@@ -143,7 +140,42 @@ namespace AzulBoardGame
             CreateGameBoardObjects();
         }
 
-        private async Task Test(int count, string filename) {
+        private async Task RunTests() {
+            //0.001s
+            await Test(100, "HeuristicTime0.001s.csv", 1);
+            //0.002s
+            await Test(100, "HeuristicTime0.002s.csv", 2);
+            //0.005s
+            await Test(100, "HeuristicTime0.005s.csv", 5);
+            //0.01s
+            await Test(100, "HeuristicTime0.01s.csv", 10);
+            //0.025s
+            await Test(100, "HeuristicTime0.025s.csv", 25);
+            //0.05s
+            await Test(100, "HeuristicTime0.05s.csv", 50);
+            //0.1s
+            await Test(100, "HeuristicTime0.1s.csv", 100);
+            //0.2s
+            await Test(100, "HeuristicTime0.2s.csv", 200);
+            //0.3s
+            await Test(100, "HeuristicTime0.3s.csv", 300);
+            //0.4s
+            await Test(100, "HeuristicTime0.4s.csv", 400);
+            //0.5s
+            await Test(100, "HeuristicTime0.5s.csv", 500);
+            //0.6s
+            await Test(100, "HeuristicTime0.6s.csv", 600);
+            //0.7s
+            await Test(100, "HeuristicTime0.7s.csv", 700);
+            //0.8s
+            await Test(100, "HeuristicTime0.8s.csv", 800);
+            //0.9s
+            await Test(100, "HeuristicTime0.9s.csv", 900);
+            //1s
+            await Test(100, "HeuristicTime1s.csv", 1000);
+        }
+
+        private async Task Test(int count, string filename, int player1TimeMs = -1) {
             File.Create(filename);
 
             for (int i = 0; i < count; i++) {
@@ -151,6 +183,9 @@ namespace AzulBoardGame
                 tilePlates.StartingPlayer = startingPlayer;
                 startButton.Visibility = Visibility.Hidden;
                 gameStarted = true;
+                if (player1TimeMs > 0) {
+                    ((MCTSAI)players[0]).timeAllotedMs = player1TimeMs;
+                }
                 await Task.Delay(2000);
                 await PlayGame();
                 WriteResults(filename, startingPlayer);

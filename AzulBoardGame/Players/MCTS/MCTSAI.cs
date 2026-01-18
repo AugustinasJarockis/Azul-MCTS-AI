@@ -14,7 +14,7 @@ namespace AzulBoardGame.Players.MCTS
 {
     internal class MCTSAI : Player
     {
-        private static readonly int timeAllotedMs = 1000;
+        public int timeAllotedMs = 500;
 
         private readonly bool _pauseBetweenChoices;
         private readonly GameManager _gameManager;
@@ -103,7 +103,7 @@ namespace AzulBoardGame.Players.MCTS
 
         public override async Task SelectRow() {
             await WaitToContinue();
-            
+
             if (move.row == 5)
                 DiscardSelectedTiles();
             else

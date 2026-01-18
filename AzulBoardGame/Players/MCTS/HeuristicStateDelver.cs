@@ -49,13 +49,13 @@ namespace AzulBoardGame.Players.MCTS
         }
 
         private bool CanReasonablyFitIntoRow(TileType type, int count, int degreeOfFreedom, ITileRow row) => 
-            (row.rowTileType == type || row.IsEmpty) 
+            (row.RowTileType == type || row.IsEmpty) 
             && row.FreeSlotCount >= count - degreeOfFreedom;
         private bool CanReasonablyFitIntoRow(TileType type, int count, int degreeOfFreedom, int rowNr) =>
-            (tileRows[rowNr].rowTileType == type || tileRows[rowNr].IsEmpty)
+            (tileRows[rowNr].RowTileType == type || tileRows[rowNr].IsEmpty)
             && tileRows[rowNr].FreeSlotCount >= count - degreeOfFreedom
             && !tileGrid.RowHasType(rowNr, type);
-        private bool CanFitIntoRow(TileType type, int count, ITileRow row) => (row.rowTileType == type || row.IsEmpty) && row.FreeSlotCount >= count;
+        private bool CanFitIntoRow(TileType type, int count, ITileRow row) => (row.RowTileType == type || row.IsEmpty) && row.FreeSlotCount >= count;
 
         public override (byte, TileType, byte) SelectTiles() {
             _tilePlates.SetSelectionCallback(ManageSelectedTiles);
@@ -126,7 +126,7 @@ namespace AzulBoardGame.Players.MCTS
 
             for (byte rowNr = 0; rowNr < tileRows.Count; rowNr++) {
                 if (!tileRows[rowNr].IsFull
-                    && (tileRows[rowNr].rowTileType == null || tileRows[rowNr].rowTileType == selectedTiles[0])
+                    && (tileRows[rowNr].RowTileType == null || tileRows[rowNr].RowTileType == selectedTiles[0])
                     && !tileGrid.RowHasType(rowNr, selectedTiles[0]))
 
                     possibleRows.Add((rowNr, tileRows[rowNr]));

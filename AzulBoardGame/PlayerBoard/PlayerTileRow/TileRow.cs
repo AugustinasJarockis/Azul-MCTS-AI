@@ -22,7 +22,7 @@ namespace AzulBoardGame.PlayerBoard.PlayerTileRow
         private Panel innerCanvas;
 
         private List<Tile> rowTiles = [];
-        public TileType? rowTileType => rowTiles.Count != 0 ? rowTiles[0].TileType : null;
+        public TileType? RowTileType => rowTiles.Count != 0 ? rowTiles[0].TileType : null;
         public bool IsFull => rowTiles.Count == _capacity;
         public bool IsEmpty => rowTiles.Count == 0;
         public int TileCount => rowTiles.Count;

@@ -62,7 +62,7 @@ namespace AzulBoardGame.Players.PlayerBase
         public abstract T Copy(TilePlatesState tilePlates, ITileBank tileBank);
 
         private bool CanBePlacedIntoRow(TileType type, int row) => 
-            (tileRows[row].rowTileType == type || tileRows[row].IsEmpty) 
+            (tileRows[row].RowTileType == type || tileRows[row].IsEmpty) 
             && !tileRows[row].IsFull 
             && !tileGrid.RowHasType(row, type);
 

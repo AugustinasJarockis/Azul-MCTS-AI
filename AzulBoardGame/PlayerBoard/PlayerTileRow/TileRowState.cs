@@ -9,7 +9,7 @@ namespace AzulBoardGame.PlayerBoard.PlayerTileRow
         private readonly int _capacity;
 
         private List<TileType> rowTiles = [];
-        public TileType? rowTileType => rowTiles.Count != 0 ? rowTiles[0] : null;
+        public TileType? RowTileType => rowTiles.Count != 0 ? rowTiles[0] : null;
         public bool IsFull => rowTiles.Count == _capacity;
         public bool IsEmpty => rowTiles.Count == 0;
         public int TileCount => rowTiles.Count;

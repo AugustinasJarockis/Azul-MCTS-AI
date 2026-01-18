@@ -7,7 +7,7 @@ namespace AzulBoardGame.PlayerBoard.PlayerTileRow
 {
     internal interface ITileRow
     {
-        public TileType? rowTileType { get; }
+        public TileType? RowTileType { get; }
         public bool IsFull { get; }
         public bool IsEmpty { get; }
         public int TileCount { get; }

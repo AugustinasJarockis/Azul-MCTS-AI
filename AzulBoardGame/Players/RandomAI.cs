@@ -88,7 +88,7 @@ namespace AzulBoardGame.Players
             
             for (int i = 0; i < tileRows.Count; i++) {
                 if (!tileRows[i].IsFull
-                    && (tileRows[i].rowTileType == null || tileRows[i].rowTileType == selectedTiles[0].TileType)
+                    && (tileRows[i].RowTileType == null || tileRows[i].RowTileType == selectedTiles[0].TileType)
                     && !tileGrid.RowHasType(i, selectedTiles[0].TileType))
 
                     possibleRows.Add(tileRows[i]);
