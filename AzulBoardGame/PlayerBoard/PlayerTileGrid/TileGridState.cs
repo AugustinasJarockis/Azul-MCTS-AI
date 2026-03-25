@@ -5,7 +5,7 @@ namespace AzulBoardGame.PlayerBoard.PlayerTileGrid
 {
     internal class TileGridState : ITileGrid
     {
-        private ReadOnlyCollection<ReadOnlyCollection<TileType>> acceptedTiles = new([
+        public ReadOnlyCollection<ReadOnlyCollection<TileType>> acceptedTiles = new([
             new([TileType.Cyan, TileType.Brown, TileType.White, TileType.Black, TileType.Red]),
             new([TileType.Red, TileType.Cyan, TileType.Brown, TileType.White, TileType.Black]),
             new([TileType.Black, TileType.Red, TileType.Cyan, TileType.Brown, TileType.White]),
@@ -34,12 +34,23 @@ namespace AzulBoardGame.PlayerBoard.PlayerTileGrid
         public TileGridState Copy() {
             return new TileGridState(doneTiles);
         }
+
+        public void Reset() {
+            doneTiles = [
+                [null, null, null, null, null],
+                [null, null, null, null, null],
+                [null, null, null, null, null],
+                [null, null, null, null, null],
+                [null, null, null, null, null]
+            ];
+        }
+
         public bool RowHasType(int rowNr, TileType type) => doneTiles[rowNr].Contains(type);
         public bool RowIsFull(int rowNr) => !doneTiles[rowNr].Contains(null);
         public bool CollumnIsFull(int collumnNr) => !doneTiles.Select(r => r[collumnNr]).Contains(null);
         public bool TypeIsComplete(TileType type) => doneTiles.Count(r => r.Contains(type)) == 5;
 
-        public int AddTile(int rowNr, TileType tile) {
+        public int AddTile(int rowNr, TileType tile) { //TODO: this may be a little inefficient. Maybe and collumn as parameter
             for (int i = 0; i < doneTiles[rowNr].Count; i++) {
                 if (acceptedTiles[rowNr][i] == tile) {
                     doneTiles[rowNr][i] = tile;

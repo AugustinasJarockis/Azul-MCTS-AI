@@ -1,5 +1,6 @@
 ﻿using AzulBoardGame.Enums;
 using AzulBoardGame.Extensions;
+using AzulBoardGame.GameState;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -17,13 +18,16 @@ namespace AzulBoardGame.GamePlates
         private Action<List<Tile>> TransferTiles;
         private Action<List<Tile>>? TileSelectionCallback = null;
 
+        public PlateState PlateState { get; set; }
+
         public List<TileType> TileTypes => [..tiles.Select(t => t.TileType)];
         public int TileCount => tiles.Count;
         public bool IsEmpty => tiles.Count == 0;
 
-        public Plate(Canvas centerCanvas, Action<List<Tile>> transferTilesFunc, double xPos, double yPos) { 
+        public Plate(Canvas centerCanvas, Action<List<Tile>> transferTilesFunc, double xPos, double yPos, PlateState plateState) { 
             _centerCanvas = centerCanvas;
             _plateCanvas = new();
+            PlateState = plateState;
 
             TransferTiles = transferTilesFunc;
 
@@ -45,10 +49,6 @@ namespace AzulBoardGame.GamePlates
             _centerCanvas.Children.Add(_plateCanvas);
         }
 
-        public PlateState GetState(Action <List<TileType>> transferFunc) {
-            return new(transferFunc, [.. tiles.Select(t => t.TileType)]);
-        }
-
         public void PlaceTiles(List<TileType> tileTypes) {
 
             double tileSize = 0.32;
@@ -57,6 +57,8 @@ namespace AzulBoardGame.GamePlates
 
             for (int i = 0; i < tileTypes.Count && i < 4; i++)
                 tiles.Add(new(_plateCanvas, this, tileTypes[i], xPos[i], yPos[i], tileSize));
+
+            PlateState.PlaceTiles(tileTypes);
         }
 
         public void SelectTiles(TileType type) {
@@ -76,6 +78,8 @@ namespace AzulBoardGame.GamePlates
                 TransferTiles(tiles);
                 tiles.Clear();
                 TileSelectionCallback(selectedTiles);
+
+                PlateState.SelectTiles(type); //TODO: Layer above has to be updated
             }
         }
 

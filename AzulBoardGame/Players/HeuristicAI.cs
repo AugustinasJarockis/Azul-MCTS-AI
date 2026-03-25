@@ -1,69 +1,18 @@
 ﻿using AzulBoardGame.Enums;
-using AzulBoardGame.Extensions;
-using AzulBoardGame.GamePlates;
-using AzulBoardGame.GameTilePlates;
+using AzulBoardGame.GameState;
 using AzulBoardGame.PlayerBoard.PlayerTileRow;
 using AzulBoardGame.Players.PlayerBase;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace AzulBoardGame.Players
 {
-    internal class HeuristicAI : Player
+    internal class HeuristicAI : IPlayerAI
     {
-        private readonly bool _pauseBetweenChoices;
+        private List<PlateState> platesWithCount(List<PlateState> plates, TileType type, int count) => [.. plates.Where(p => p.TileTypes.Count(t => t == type) == count)];
+        private int tilesInCenter(TilePlatesState tilePlates, TileType type) => tilePlates.CenterTileTypes.Count(t => t == type);
 
-        private Image? waitButton = null;
-        private TaskCompletionSource<bool>? waiter = null;
-        public HeuristicAI(
-            Canvas mainCanvas,
-            ScaleTransform scaleTransform,
-            TranslateTransform translateTransform,
-            Action notifyAboutCompletion,
-            TilePlates tilePlates,
-            ITileBank tileBank,
-            string name,
-            Brush nameColour,
-            Key keyToFocus,
-            double xPos,
-            double yPos,
-            double size,
-            bool pauseBetweenChoices = false
-            )
-            : base(mainCanvas, scaleTransform, translateTransform, notifyAboutCompletion, tilePlates, tileBank, name, nameColour, keyToFocus, xPos, yPos, size) {
-
-            _pauseBetweenChoices = pauseBetweenChoices;
-
-            if (_pauseBetweenChoices) {
-
-                waitButton = new Image {
-                    Source = new BitmapImage(new Uri("Textures/continue.png", UriKind.Relative)),
-                    Visibility = Visibility.Hidden
-                };
-
-                mainCanvas.Loaded += (s, e) => {
-                    mainCanvas.Dispatcher.BeginInvoke(() => {
-                        mainCanvas.SetRelativePosCentered(waitButton, 0.5, 0.9, 0.1, 0.3);
-                    });
-                };
-
-                mainCanvas.Children.Add(waitButton);
-
-                waitButton.MouseDown += (s, a) => waiter?.TrySetResult(true);
-                waitButton.MouseEnter += (s, a) => waitButton.Opacity = 0.5;
-                waitButton.MouseLeave += (s, a) => waitButton.Opacity = 1.0;
-            }
-        }
-
-        private List<IPlate> platesWithCount(List<IPlate> plates, TileType type, int count) => [.. plates.Where(p => p.TileTypes.Count(t => t == type) == count)];
-        private int tilesInCenter(TileType type) => _tilePlates.CenterTileTypes.Count(t => t == type);
-
-        private bool CanReasonablyFit(TileType type, int count) {
+        private bool CanReasonablyFit(PlayerBoardState playerState, TileType type, int count) {
             for (int rowNr = Math.Max(0, count - 1); rowNr < 5; rowNr++) {
-                if (CanReasonablyFitIntoRow(type, count, rowNr >= 2 ? 1 : 0, rowNr))
+                if (CanReasonablyFitIntoRow(playerState, type, count, rowNr >= 2 ? 1 : 0, rowNr))
                     return true;
             }
             return false;
@@ -72,45 +21,38 @@ namespace AzulBoardGame.Players
         private bool CanReasonablyFitIntoRow(TileType type, int count, int degreeOfFreedom, ITileRow row) => 
             (row.RowTileType == type || row.IsEmpty) 
             && row.FreeSlotCount >= count - degreeOfFreedom;
-        private bool CanReasonablyFitIntoRow(TileType type, int count, int degreeOfFreedom, int rowNr) => 
-            (tileRows[rowNr].RowTileType == type || tileRows[rowNr].IsEmpty) 
-            && tileRows[rowNr].FreeSlotCount >= count - degreeOfFreedom
-            && !tileGrid.RowHasType(rowNr, type);
+        private bool CanReasonablyFitIntoRow(PlayerBoardState playerState, TileType type, int count, int degreeOfFreedom, int rowNr) => 
+            (playerState.tileRows[rowNr].RowTileType == type || playerState.tileRows[rowNr].IsEmpty) 
+            && playerState.tileRows[rowNr].FreeSlotCount >= count - degreeOfFreedom
+            && !playerState.tileGrid.RowHasType(rowNr, type);
         private bool CanFitIntoRow(TileType type, int count, ITileRow row) => 
             (row.RowTileType == type || row.IsEmpty) 
             && row.FreeSlotCount >= count;
 
-        public override async Task SelectTiles() {
-            await WaitToContinue();
-            SetPlayersTurn();
-            _tilePlates.SetSelectionCallback(ManageSelectedTiles);
+        private (byte, TileType, int) SelectTiles(GeneralGameState gameState) {
+            TilePlatesState tilePlates = gameState.TilePlatesState;
+            PlayerBoardState playerBoard = gameState.PlayerBoardStates[gameState.CurrentPlayer];
 
-            int centerTilesExist = _tilePlates.CenterTileCount != 0 ? 1 : 0;
+            int centerTilesExist = tilePlates.CenterTileCount != 0 ? 1 : 0;
 
-            var plates = _tilePlates.Plates.Where(p => !p.IsEmpty).ToList();
+            var plates = tilePlates.Plates.Where(p => !p.IsEmpty).ToList();
 
             for (int type = 1; type < 6; type++) {
-                int tileInCenterCount = tilesInCenter((TileType)type);
-                if (tileInCenterCount >= 5 && CanReasonablyFit((TileType)type, tileInCenterCount)) {
-                    MoveMade.plateNr = 0;
-                    _tilePlates.SelectTiles((TileType)type);
-                    return;
+                int tileInCenterCount = tilesInCenter(tilePlates, (TileType)type);
+                if (tileInCenterCount >= 5 && CanReasonablyFit(playerBoard, (TileType)type, tileInCenterCount)) {
+                    return (0, (TileType)type, tileInCenterCount);
                 }
             }
 
             for (int count = 4; count > 0; count--) {
                 for (int type = 1; type < 6; type++) {
-                    var platesToSelect = platesWithCount(plates, (TileType)type, count);
-                    if (platesToSelect.Count != 0 && CanReasonablyFit((TileType)type, count)) {
-                        MoveMade.plateNr = (byte)(_tilePlates.Plates.IndexOf(platesToSelect[0]) + 1);
-                        platesToSelect[0].SelectTiles((TileType)type);
-                        return;
+                    var platesToSelect = platesWithCount(tilePlates.Plates, (TileType)type, count);
+                    if (platesToSelect.Count != 0 && CanReasonablyFit(playerBoard, (TileType)type, count)) {
+                        return ((byte)(tilePlates.Plates.IndexOf(platesToSelect[0]) + 1), (TileType)type, count);
                     }
 
-                    if(tilesInCenter((TileType)type) == count && CanReasonablyFit((TileType)type, count)) {
-                        MoveMade.plateNr = 0;
-                        _tilePlates.SelectTiles((TileType)type);
-                        return;
+                    if (tilesInCenter(tilePlates, (TileType)type) == count && CanReasonablyFit(playerBoard, (TileType)type, count)) {
+                        return (0, (TileType)type, count);
                     }
                 }
             }
@@ -119,72 +61,58 @@ namespace AzulBoardGame.Players
             for (int count = 1; count < 5; count++) {
                 for (int type = 1; type < 6; type++) {
                     var platesToSelect = platesWithCount(plates, (TileType)type, count);
-                    if (platesToSelect.Count != 0) {
-                        MoveMade.plateNr = (byte)(_tilePlates.Plates.IndexOf(platesToSelect[0]) + 1);
-                        platesToSelect[0].SelectTiles((TileType)type);
-                        return;
-                    }
+                    if (platesToSelect.Count != 0)
+                        return ((byte)(tilePlates.Plates.IndexOf(platesToSelect[0]) + 1), (TileType)type, count);
 
-                    if (tilesInCenter((TileType)type) == count) {
-                        MoveMade.plateNr = 0;
-                        _tilePlates.SelectTiles((TileType)type);
-                        return;
-                    }
+                    if (tilesInCenter(tilePlates, (TileType)type) == count)
+                        return (0, (TileType)type, count);
                 }
             }
 
             //Select first
-            _tilePlates.SelectTiles(_tilePlates.CenterTileTypes[0]);
+            TileType finalType = tilePlates.CenterTileTypes[0];
+            int finalCount = tilesInCenter(tilePlates, finalType);
+            return (0, finalType, finalCount);
         }
 
-        public override async Task SelectRow() {
-            await WaitToContinue();
-            List<TileRow> possibleRows = [];
+        public byte SelectRow(PlayerBoardState playerState, TileType selectedType, int selectedTileCount) {
+            
+            List<(TileRowState row, int rowNr)> possibleRows = [];
 
-            for (int rowNr = 0; rowNr < tileRows.Count; rowNr++) {
-                if (!tileRows[rowNr].IsFull
-                    && (tileRows[rowNr].RowTileType == null || tileRows[rowNr].RowTileType == selectedTiles[0].TileType)
-                    && !tileGrid.RowHasType(rowNr, selectedTiles[0].TileType))
+            for (int rowNr = 0; rowNr < playerState.tileRows.Count; rowNr++) {
+                if (!playerState.tileRows[rowNr].IsFull
+                    && (playerState.tileRows[rowNr].RowTileType == null || playerState.tileRows[rowNr].RowTileType == selectedType)
+                    && !playerState.tileGrid.RowHasType(rowNr, selectedType))
 
-                    possibleRows.Add(tileRows[rowNr]);
+                    possibleRows.Add((playerState.tileRows[rowNr], rowNr));
             }
 
             if (possibleRows.Count > 0) {
 
                 for (int rowNr = 0; rowNr < possibleRows.Count; rowNr++) {
-                    if (CanFitIntoRow(selectedTiles[0].TileType, selectedTiles.Count, possibleRows[rowNr])) {
-                        TakeSelectedTiles(possibleRows[rowNr]);
-                        return;
+                    if (CanFitIntoRow(selectedType, selectedTileCount, possibleRows[rowNr].row)) {
+                        return (byte)possibleRows[rowNr].rowNr;
                     }
                 }
 
                 for (int rowNr = 0; rowNr < possibleRows.Count; rowNr++) {
-                    if (CanReasonablyFitIntoRow(selectedTiles[0].TileType, selectedTiles.Count, 1, possibleRows[rowNr])) {
-                        TakeSelectedTiles(possibleRows[rowNr]);
-                        return;
+                    if (CanReasonablyFitIntoRow(selectedType, selectedTileCount, 1, possibleRows[rowNr].row)) {
+                        return (byte)possibleRows[rowNr].rowNr;
                     }
                 }
 
-                TakeSelectedTiles(possibleRows.MaxBy(row => row.FreeSlotCount)!); 
+                return (byte)possibleRows.MaxBy(row => row.row.FreeSlotCount)!.rowNr; 
             }
             else {
-                DiscardSelectedTiles();
+                return 5;
             }
         }
 
-        protected override void RemoveSelectedTiles() {
-            selectedTiles.Clear();
-            EndPlayersTurn();
-            NotifyAboutCompletion();
-        }
-
-        private async Task WaitToContinue() {
-            if (_pauseBetweenChoices) {
-                waiter = new();
-                waitButton!.Visibility = Visibility.Visible;
-                await waiter.Task;
-                waitButton.Visibility = Visibility.Hidden;
-            }
+        public (byte, TileType, byte) ChooseMove(GeneralGameState gameState) {
+            (byte plate, TileType type, byte row) moveToMake;
+            (moveToMake.plate, moveToMake.type, int selectedTileCount) = SelectTiles(gameState);
+            moveToMake.row = SelectRow(gameState.PlayerBoardStates[gameState.CurrentPlayer], moveToMake.type, selectedTileCount);            
+            return moveToMake;
         }
     }
 }

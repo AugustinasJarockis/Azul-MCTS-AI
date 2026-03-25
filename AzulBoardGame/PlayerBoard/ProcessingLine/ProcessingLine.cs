@@ -1,5 +1,5 @@
-﻿using AzulBoardGame.Enums;
-using AzulBoardGame.Extensions;
+﻿using AzulBoardGame.Extensions;
+using AzulBoardGame.GameState;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -9,6 +9,8 @@ namespace AzulBoardGame.PlayerBoard
 {
     internal class ProcessingLine
     {
+        public ProcessingLineState State {  get; set; }
+
         private readonly Canvas _playerCanvas;
         private readonly ITileBank _tileBank;
 
@@ -19,7 +21,8 @@ namespace AzulBoardGame.PlayerBoard
 
         private List<Tile> processedTiles = [];
 
-        public ProcessingLine(Canvas playerCanvas, ITileBank tileBank, Action discardSelectedTiles) { 
+        public ProcessingLine(ProcessingLineState state, Canvas playerCanvas, ITileBank tileBank, Action discardSelectedTiles) {
+            State = state;
             _playerCanvas = playerCanvas;
             _tileBank = tileBank;
             DiscardSelectedTiles = discardSelectedTiles;
@@ -58,17 +61,12 @@ namespace AzulBoardGame.PlayerBoard
             };
         }
 
-        public ProcessingLineState GetState(ITileBank tileBank) {
-            return new(tileBank, [..processedTiles.Select(t => t.TileType)]);
-        }
         public void AddTile(Tile tile) {
             if (processedTiles.Count < 7) {
                 tile.Move(0.025 + processedTiles.Count * 0.1, 0.88);
                 processedTiles.Add(tile);
             }
             else {
-                if (tile.TileType != TileType.First)
-                    _tileBank.DiscardTiles(tile.TileType);
                 tile.Destroy();
             }
         }
@@ -78,29 +76,13 @@ namespace AzulBoardGame.PlayerBoard
                 AddTile(tile);
         }
 
-        public int GetPointLoss() => processedTiles.Count switch {
-            0 => 0,
-            1 => 1,
-            2 => 2,
-            3 => 4,
-            4 => 6,
-            5 => 8,
-            6 => 11,
-            7 => 14,
-            _ => 14
-        }; 
-
         public int Clear() {
-            int pointLoss = GetPointLoss();
-
             foreach (var tile in processedTiles) {
-                if (tile.TileType != TileType.First)
-                    _tileBank.DiscardTiles(tile.TileType);
                 tile.Destroy();
             }
 
             processedTiles.Clear();
-            return pointLoss;
+            return State.Clear(_tileBank);
         }
 
         private void ShowBorder() => lineBorder.BorderThickness = new Thickness(2.5);

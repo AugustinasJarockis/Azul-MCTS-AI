@@ -1,5 +1,6 @@
 ﻿using AzulBoardGame.Enums;
 using System.Collections.ObjectModel;
+using System.Security.Policy;
 
 namespace AzulBoardGame
 {
@@ -14,5 +15,8 @@ namespace AzulBoardGame
         public List<TileType> RefreshTiles(int plateCount);
 
         public void DiscardTiles(TileType type, int count = 1);
+
+        public ITileBank Copy();
+        public void Reset();
     }
 }

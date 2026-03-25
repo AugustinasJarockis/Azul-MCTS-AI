@@ -1,49 +1,16 @@
-﻿using AzulBoardGame.GameTilePlates;
-using AzulBoardGame.Players.MCTS.StateEvaluators;
-using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
+﻿using AzulBoardGame.Players.MCTS.StateEvaluators;
 
 namespace AzulBoardGame.Players.MCTS.MCTSVariants
 {
-    internal class MCTSAIScoreDiffAvg : MCTSAI {
-        public MCTSAIScoreDiffAvg (
-            GameManager gameManager,
-            Canvas mainCanvas,
-            ScaleTransform scaleTransform,
-            TranslateTransform translateTransform,
-            Action notifyAboutCompletion,
-            TilePlates tilePlates,
-            ITileBank tileBank,
-            string name,
-            Brush nameColour,
-            Key keyToFocus,
-            double xPos,
-            double yPos,
-            double size,
-            bool pauseBetweenChoices = false
-            )
+    internal class MCTSAIScoreDiffAvg : MCTSAI
+    {
+        public MCTSAIScoreDiffAvg()
             : base(
                   new GenericStateEvaluator(
                       GenericStateEvaluator.MaxScore,
                       GenericStateEvaluator.PointDifference,
                       GenericStateEvaluator.AveragePoints
-                      ),
-                  gameManager,
-                  mainCanvas, 
-                  scaleTransform, 
-                  translateTransform, 
-                  notifyAboutCompletion, 
-                  tilePlates, 
-                  tileBank, 
-                  name, 
-                  nameColour, 
-                  keyToFocus, 
-                  xPos, 
-                  yPos, 
-                  size,
-                  pauseBetweenChoices
-                  ) 
-            {}
+                      )
+                  ) { }
     }
 }

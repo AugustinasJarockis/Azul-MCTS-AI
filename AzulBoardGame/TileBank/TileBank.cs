@@ -19,8 +19,21 @@ namespace AzulBoardGame
             TileDiscard = new(tileDiscard);
         }
 
-        public DeterministicTileBank GetDeterministicCopy() { // TODO: Truksta determinizmo naudojimo
-            return new([.. tileReserve], [.. tileDiscard]);
+        public TileBank(List<int> tileReserve, List<int> tileDiscard) {
+            this.tileReserve = tileReserve;
+            this.tileDiscard = tileDiscard;
+            
+            TileReserve = new(this.tileReserve);
+            TileDiscard = new(this.tileDiscard);
+        }
+
+        public ITileBank Copy() {
+            return new TileBank([.. tileReserve], [.. tileDiscard]);
+        }
+
+        public void Reset() {
+            tileReserve = [20, 20, 20, 20, 20];
+            tileDiscard = [0, 0, 0, 0, 0];
         }
 
         public List<TileType> RefreshTiles(int plateCount) {

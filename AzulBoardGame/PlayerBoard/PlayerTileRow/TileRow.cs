@@ -1,5 +1,6 @@
 ﻿using AzulBoardGame.Enums;
 using AzulBoardGame.Extensions;
+using AzulBoardGame.GameState;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -9,12 +10,13 @@ namespace AzulBoardGame.PlayerBoard.PlayerTileRow
 {
     internal class TileRow : ITileRow
     {
+        public TileRowState State { get; set; }
+
         private readonly Canvas _playerCanvas;
         private readonly ProcessingLine _processingLine;
         private readonly ITileBank _tileBank;
         private readonly double _xPos;
         private readonly double _yPos;
-        private readonly int _capacity;
 
         private readonly Action<TileRow> TakeSelectedTiles;
 
@@ -22,12 +24,13 @@ namespace AzulBoardGame.PlayerBoard.PlayerTileRow
         private Panel innerCanvas;
 
         private List<Tile> rowTiles = [];
-        public TileType? RowTileType => rowTiles.Count != 0 ? rowTiles[0].TileType : null;
-        public bool IsFull => rowTiles.Count == _capacity;
-        public bool IsEmpty => rowTiles.Count == 0;
-        public int TileCount => rowTiles.Count;
-        public int FreeSlotCount => _capacity - rowTiles.Count;
+        public TileType? RowTileType => State.RowTileType;
+        public bool IsFull => State.IsFull;
+        public bool IsEmpty => State.IsEmpty;
+        public int TileCount => State.TileCount;
+        public int FreeSlotCount => State.FreeSlotCount;
         public TileRow(
+            TileRowState state,
             Canvas playerCanvas, 
             double xPos, 
             double yPos, 
@@ -38,12 +41,12 @@ namespace AzulBoardGame.PlayerBoard.PlayerTileRow
             ITileBank tileBank,
             Action<TileRow> takeSelectedTiles
             ) {
+            State = state;
             _playerCanvas = playerCanvas;
             _processingLine = processingLine;
             _tileBank = tileBank;
             _xPos = xPos;
             _yPos = yPos;
-            _capacity = capacity;
             TakeSelectedTiles = takeSelectedTiles;
 
             innerCanvas = new Canvas {
@@ -80,12 +83,9 @@ namespace AzulBoardGame.PlayerBoard.PlayerTileRow
             };
         }
 
-        public TileRowState GetState(ProcessingLineState processingLineState, ITileBank tileBank) {
-            return new(_capacity, processingLineState, tileBank, [..rowTiles.Select(t => t.TileType)]);
-        }
-
         public void AddTiles(List<Tile> tiles) {
-            while (rowTiles.Count < _capacity && tiles.Count > 0) {
+            State.AddTiles([.. tiles.Select(t => t.TileType)]);
+            while (rowTiles.Count < State.Capacity && tiles.Count > 0) {
                 tiles[0].Move(_xPos - 0.0875 - rowTiles.Count * 0.092, _yPos - 0.05);
                 rowTiles.Add(tiles[0]);
                 tiles.RemoveAt(0);
@@ -94,8 +94,9 @@ namespace AzulBoardGame.PlayerBoard.PlayerTileRow
         }
 
         public Tile PrepareForTileTransfer() {
+            State.PrepareForTileTransfer(); //TODO: Pazet ar viskas gerai, kad nediscardinam realiai
             var firstTile = rowTiles[0];
-            _tileBank.DiscardTiles(rowTiles[0].TileType, rowTiles.Count - 1);
+            _tileBank.DiscardTiles(rowTiles[0].TileType, rowTiles.Count - 1); //Šitas būtinas, nes state to nedaro
 
             for (int i = 1; i < rowTiles.Count; i++)
                 rowTiles[i].Destroy();

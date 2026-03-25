@@ -32,8 +32,8 @@ namespace AzulBoardGame
             TileDiscard = new(this.tileDiscard);
         }
 
-        public DeterministicTileBank Copy() {
-            return new (tileReserve, tileDiscard);
+        public ITileBank Copy() {
+            return new DeterministicTileBank(tileReserve, tileDiscard);
         }
 
         public List<TileType> RefreshTiles(int plateCount) {
@@ -71,6 +71,10 @@ namespace AzulBoardGame
                 tileReserve[i] += tileDiscard[i];
                 tileDiscard[i] = 0;
             }
+        }
+
+        public void Reset() {
+            throw new NotImplementedException();
         }
     }
 }

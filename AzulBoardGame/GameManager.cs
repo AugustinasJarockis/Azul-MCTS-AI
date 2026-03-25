@@ -1,11 +1,11 @@
 ﻿using AzulBoardGame.Enums;
 using AzulBoardGame.Extensions;
+using AzulBoardGame.GameState;
 using AzulBoardGame.GameTilePlates;
-using AzulBoardGame.Players;
 using AzulBoardGame.Players.MCTS;
 using AzulBoardGame.Players.MCTS.MCTSVariants;
-using AzulBoardGame.Players.MCTS.StateEvaluators;
 using AzulBoardGame.Players.PlayerBase;
+using AzulBoardGame.Utilities;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,39 +18,39 @@ namespace AzulBoardGame
 {
     internal class GameManager
     {
-        private readonly Canvas _mainCanvas;
-        private readonly ScaleTransform _scaleTransform;
-        private readonly TranslateTransform _translateTransform;
+        private readonly CanvasControls _canvasControls;
 
         private VictoryPopup victoryPopup;
         private Image? waitButton;
         private bool waitBeforeTurnEnd = false;
         private TaskCompletionSource<bool> waiter;
 
+        public GeneralGameState gameState;
         private List<Player> players = [];
         private TileBank tileBank;
         private TilePlates tilePlates;
 
-        private int plateCount = 5;
         private bool gameStarted = false;
 
         private Image startButton = null;
 
         private TaskCompletionSource<bool> tcs;
 
-        public bool runTests = true;
-
-        public int CurrentPlayer { get; private set; } = 0;
+        public bool runTests = false;
+        private int playerCount = 2;
         public int PlayerCount => players.Count;
+        public int PlateCount => gameState.TilePlatesState.Plates.Count;
         public (byte plate, TileType type, byte row)?[] recentMoves = [null, null, null, null]; 
         public GameManager(Canvas mainCanvas, ScaleTransform scaleTransform, TranslateTransform translateTransform) {
-            _mainCanvas = mainCanvas;
-            _scaleTransform = scaleTransform;
-            _translateTransform = translateTransform;
+            _canvasControls = new (){
+                Canvas = mainCanvas,
+                ScaleTransform = scaleTransform,
+                TranslateTransform = translateTransform
+            };
 
             CreateGameBoardObjects();
 
-            _mainCanvas.KeyDown += (s, e) => {
+            _canvasControls.Canvas.KeyDown += (s, e) => {
                 if (e.Key == Key.S && !gameStarted) {
                     StartGame();
                 }
@@ -58,42 +58,38 @@ namespace AzulBoardGame
 
             if (runTests) {
                 Test(900, "RepeatedBestAgentTests.csv");
-                //RunTests();
+                RunTests();
             }
         }
 
         private void CreateGameBoardObjects() {
-            victoryPopup = new VictoryPopup(_mainCanvas, ResetGame);
-            tilePlates = new TilePlates(_mainCanvas, _scaleTransform, _translateTransform, this, Key.NumPad5, plateCount);
+
+            //Create Player AIs
+            var player1 = new MCTSAIScoreDiffAvg();
+            var player2 = new MCTSAIScoreTotalAvg();
+
+            gameState = new(playerCount);
+            victoryPopup = new VictoryPopup(_canvasControls.Canvas, ResetGame);
+            tilePlates = new TilePlates(_canvasControls, this, Key.NumPad5, gameState.TilePlatesState);
             tileBank = new TileBank();
 
             //Agents to be tested
-            players.Add(new MCTSAIScoreDiffAvg(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "ScoreDiffAvg", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35));
-            players.Add(new MCTSAIScoreTotalAvg(this, _mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "ScoreTotalAvg", Brushes.Blue, Key.NumPad2, 0.18, 0.18, 0.35));
-            //players.Add(new HeuristicAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Heuristic", Brushes.Blue, Key.NumPad2, 0.18, 0.18, 0.35));
-
-            //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Žaidėjas 1", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35));
-            //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Žaidėjas 2", Brushes.Blue, Key.NumPad3, 0.18, 0.18, 0.35));
-            //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Žaidėjas 3", Brushes.Green, Key.NumPad4, 0.82, 0.18, 0.35));
-            //players.Add(new Human(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Žaidėjas 4", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35));
-
-            // Heuristic vs Random
-            //players.Add(new HeuristicAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Heuristic", Brushes.Green, Key.NumPad1, 0.82, 0.18, 0.35));
-            //players.Add(new RandomAI(_mainCanvas, _scaleTransform, _translateTransform, NotifyAboutCompletion, tilePlates, tileBank, "Random", Brushes.Yellow, Key.NumPad2, 0.82, 0.82, 0.35));
-
+            players.Add(new(gameState.PlayerBoardStates[0], player1, _canvasControls, NotifyAboutCompletion, tilePlates, tileBank, "Petras", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35, true));
+            players.Add(new(gameState.PlayerBoardStates[1], player2, _canvasControls, NotifyAboutCompletion, tilePlates, tileBank, "Jonas", Brushes.Blue, Key.NumPad2, 0.18, 0.18, 0.35));
+            
             if (waitBeforeTurnEnd) {
                 waitButton = new Image {
                     Source = new BitmapImage(new Uri("Textures/continue.png", UriKind.Relative)),
                     Visibility = Visibility.Hidden
                 };
 
-                _mainCanvas.Loaded += (s, e) => {
-                    _mainCanvas.Dispatcher.BeginInvoke(() => {
-                        _mainCanvas.SetRelativePosCentered(waitButton, 0.5, 0.9, 0.1, 0.3);
+                _canvasControls.Canvas.Loaded += (s, e) => {
+                    _canvasControls.Canvas.Dispatcher.BeginInvoke(() => {
+                        _canvasControls.Canvas.SetRelativePosCentered(waitButton, 0.5, 0.9, 0.1, 0.3);
                     });
                 };
 
-                _mainCanvas.Children.Add(waitButton);
+                _canvasControls.Canvas.Children.Add(waitButton);
 
                 waitButton.MouseDown += (s, a) => waiter?.TrySetResult(true);
                 waitButton.MouseEnter += (s, a) => waitButton.Opacity = 0.5;
@@ -105,22 +101,17 @@ namespace AzulBoardGame
                 Visibility = Visibility.Visible
             };
 
-            _mainCanvas.Loaded += (s, e) => {
-                _mainCanvas.Dispatcher.BeginInvoke(() => {
-                    _mainCanvas.SetRelativePosCentered(startButton, 0.5, 0.9, 0.1, 0.3);
+            _canvasControls.Canvas.Loaded += (s, e) => {
+                _canvasControls.Canvas.Dispatcher.BeginInvoke(() => {
+                    _canvasControls.Canvas.SetRelativePosCentered(startButton, 0.5, 0.9, 0.1, 0.3);
                 });
             };
 
-            _mainCanvas.Children.Add(startButton);
+            _canvasControls.Canvas.Children.Add(startButton);
 
             startButton.MouseDown += (s, a) => { if (!gameStarted) StartGame(); };
             startButton.MouseEnter += (s, a) => startButton.Opacity = 0.5;
             startButton.MouseLeave += (s, a) => startButton.Opacity = 1.0;
-        }
-
-        public GameState GetState(int playerOfInterest, IStateEvaluator stateEvaluator) {
-            // TODO: determinizmas
-            return new (tileBank.GetDeterministicCopy(), tilePlates, players, CurrentPlayer, playerOfInterest, stateEvaluator);
         }
 
         public void StartGame() {
@@ -133,10 +124,10 @@ namespace AzulBoardGame
         public void ResetGame() {
             gameStarted = false;
             players.Clear();
-            _mainCanvas.Children.Clear();
+            _canvasControls.Canvas.Children.Clear();
             var mainWindow = Application.Current.MainWindow;
             mainWindow.Content = null;
-            mainWindow.Content = _mainCanvas;
+            mainWindow.Content = _canvasControls.Canvas;
             CreateGameBoardObjects();
         }
 
@@ -179,24 +170,25 @@ namespace AzulBoardGame
             File.Create(filename);
 
             for (int i = 0; i < count; i++) {
-                int startingPlayer = i / ((count + players.Count - 1) / players.Count); 
-                tilePlates.StartingPlayer = startingPlayer;
+                int startingPlayer = i / ((count + players.Count - 1) / players.Count);
+                gameState.NextRoundStartingPlayer = startingPlayer;
+                gameState.CurrentPlayer = startingPlayer;
                 startButton.Visibility = Visibility.Hidden;
                 gameStarted = true;
                 if (player1TimeMs > 0) {
-                    ((MCTSAI)players[0]).timeAllotedMs = player1TimeMs;
+                    ((MCTSAI)players[0].PlayerAI).timeAllotedMs = player1TimeMs;
                 }
                 await Task.Delay(2000);
                 await PlayGame();
                 WriteResults(filename, startingPlayer);
                 ResetGame();
             }
-        } 
+        }
 
         private void WriteResults(string filename, int startingPlayer) {
             string textToAppend = "";
             string delimiter = "; ";
-            textToAppend += players.Count  + delimiter;
+            textToAppend += players.Count + delimiter;
             textToAppend += startingPlayer + delimiter;
             foreach (var player in players) {
                 textToAppend += player.Name + delimiter;
@@ -219,18 +211,17 @@ namespace AzulBoardGame
 
         private async Task PlayGame() {
             while (!players.Any(p => p.HasFinished())) {
-                var tileTypes = tileBank.RefreshTiles(plateCount);
+                var tileTypes = tileBank.RefreshTiles(PlateCount);
                 tilePlates.RefreshPlates(tileTypes);
 
-                CurrentPlayer = tilePlates.StartingPlayer;
                 while (tilePlates.TotalTileCount > 0) {
                     tcs = new();
-                    players[CurrentPlayer].SelectTiles();
+                    await players[gameState.CurrentPlayer].MakeMove(gameState);
                     await tcs.Task;
-                    _mainCanvas.InvalidateVisual();
+                    _canvasControls.Canvas.InvalidateVisual();
                     await Dispatcher.Yield(DispatcherPriority.Render);
-                    recentMoves[CurrentPlayer] = players[CurrentPlayer].MoveMade;
-                    CurrentPlayer = (CurrentPlayer + 1) % players.Count;
+                    recentMoves[gameState.CurrentPlayer] = gameState.PlayerBoardStates[gameState.CurrentPlayer].MoveMade;
+                    gameState.CurrentPlayer = (gameState.CurrentPlayer + 1) % players.Count;
                 }
 
                 await WaitToContinue();
@@ -241,6 +232,7 @@ namespace AzulBoardGame
 
             foreach (Player player in players)
                 player.CalculateAdditionalPoints();
+            }
         }
 
         public void NotifyAboutCompletion() => tcs?.TrySetResult(true);

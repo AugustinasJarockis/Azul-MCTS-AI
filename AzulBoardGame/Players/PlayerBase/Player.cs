@@ -1,46 +1,27 @@
-﻿using AzulBoardGame.Enums;
-using AzulBoardGame.Extensions;
-using AzulBoardGame.GameTilePlates;
-using AzulBoardGame.PlayerBoard;
-using AzulBoardGame.PlayerBoard.PlayerTileGrid;
-using AzulBoardGame.PlayerBoard.PlayerTileRow;
-using AzulBoardGame.PlayerBoard.PointCounter;
-using AzulBoardGame.Players.MCTS;
+﻿using AzulBoardGame.GameTilePlates;
+using AzulBoardGame.GameState;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
+using AzulBoardGame.Utilities;
 
 namespace AzulBoardGame.Players.PlayerBase
 {
-    internal abstract class Player: ITileContainer
+    internal class Player
     {
-        private readonly Canvas _mainCanvas;
-        private readonly ScaleTransform _scaleTransform;
-        private readonly TranslateTransform _translateTransform;
-        protected readonly TilePlates _tilePlates;
-        private readonly ITileBank _tileBank;
-        private readonly Key _keyToFocus;
+        private PlayerUI playerUI;
+        public PlayerBoardState PlayerBoardState { get; set; }
+        public IPlayerAI PlayerAI;
+
+        public int Points => PlayerBoardState.Points;
+        public string Name => playerUI.Name;
 
         protected readonly Action NotifyAboutCompletion;
 
-        private Canvas playerCanvas;
-        protected ProcessingLine processingLine;
-        private IPointCounter pointCounter;
-        private PlayerNamePanel playerNamePanel;
-        protected List<TileRow> tileRows = [];
-        protected List<Tile> selectedTiles = [];
-        protected TileGrid tileGrid;
-
-        public (byte plateNr, TileType type, byte row) MoveMade;
-
-        public int Points => pointCounter.Points;
-        public string Name => playerNamePanel.Name;
-
         public Player(
-            Canvas mainCanvas, 
-            ScaleTransform scaleTransform, 
-            TranslateTransform translateTransform,
+            PlayerBoardState playerBoardState,
+            IPlayerAI playerAI,
+            CanvasControls canvasControls,
             Action notifyAboutCompletion,
             TilePlates tilePlates,
             ITileBank tileBank,
@@ -49,153 +30,43 @@ namespace AzulBoardGame.Players.PlayerBase
             Key keyToFocus,
             double xPos, 
             double yPos, 
-            double size
+            double size,
+            bool pauseBetweenChoices = false
             ) {
-            _mainCanvas = mainCanvas;
-            _scaleTransform = scaleTransform;
-            _translateTransform = translateTransform;
-            NotifyAboutCompletion = notifyAboutCompletion;
-            _tilePlates = tilePlates;
-            _tileBank = tileBank;
-            _keyToFocus = keyToFocus;
-
-
-            playerCanvas = new() {};
-
-            processingLine = new(playerCanvas, _tileBank, DiscardSelectedTiles);
-            pointCounter = new PointCounter(playerCanvas);
-            playerNamePanel = new(playerCanvas, name, nameColour);
-            tileGrid = new();
-
-            _mainCanvas.Loaded += (s, e) => {
-                _mainCanvas.SetRelativePosCentered(playerCanvas, xPos, yPos, size, size);
-            };
-
-            Image playerBoard = new Image {
-                Opacity = 0.65,
-                Stretch = Stretch.Fill,
-                Source = new BitmapImage(new Uri("Textures/playerBoard.png", UriKind.Relative)),
-            };
-
-            for (int i = 0; i < 5; i++) {
-                tileRows.Add(new(playerCanvas, 0.481, 0.105 + i * 0.142, 0.1475, i * 0.09 + 0.105, i + 1, processingLine, tileBank, TakeSelectedTiles));
-            }
-
-            playerCanvas.Loaded += (s, e) => {
-                playerCanvas.Dispatcher.BeginInvoke(() => {
-                    playerCanvas.SetRelativeDimensions(playerBoard, 1, 1);
-                });
-            };
-
-            playerCanvas.Children.Add(playerBoard);
-            _mainCanvas.Children.Add(playerCanvas);
-
-            _mainCanvas.KeyDown += (s, e) => {
-                if (e.Key == _keyToFocus)
-                    Focus();
-            };
-        }
-
-        public HeuristicStateDelver GetHeuristicStateDelver(
-            TilePlatesState tilePlates, 
-            ITileBank tileBank) 
-        {
-            var processingLineState = processingLine.GetState(tileBank);
-            return new(
-                tilePlates, 
+            PlayerBoardState = playerBoardState;
+            playerUI = new( //TODO: changing player board state requires updating link //TODO: double check correct state updates
+                PlayerBoardState,
+                canvasControls,
+                notifyAboutCompletion,
+                tilePlates,
                 tileBank,
-                processingLineState,
-                new InvisiblePointCounter(Points), 
-                tileGrid.GetState(),
-                [.. tileRows.Select(r => r.GetState(processingLineState, tileBank))]
+                name,
+                nameColour,
+                keyToFocus,
+                xPos,
+                yPos,
+                size,
+                pauseBetweenChoices
                 );
+
+            PlayerAI = playerAI;
+
+            NotifyAboutCompletion = notifyAboutCompletion;
         }
 
-        public void CalculateAdditionalPoints() {
-            int totalPointChange = 0;
-            for (int i = 0; i < 5; i++) {
-                if (tileGrid.RowIsFull(i))
-                    totalPointChange += 2;
+        public void SetPlayersTurn() => playerUI.SetPlayersTurn();
+        public void EndPlayersTurn() => playerUI.EndPlayersTurn();
+        public bool HasFinished() => PlayerBoardState.HasFinished();
+        public void CompleteRound() => playerUI.CompleteRound();
+        public void CalculateAdditionalPoints() => playerUI.CalculateAdditionalPoints();
 
-                if (tileGrid.CollumnIsFull(i))
-                    totalPointChange += 7;
-
-                if (tileGrid.TypeIsComplete((TileType)(i + 1)))
-                    totalPointChange += 10;
-            }
-
-            pointCounter.UpdatePoints(totalPointChange);
-        }
-
-        public bool HasFinished() {
-            for (int i = 0; i < 5; i++)
-                if (tileGrid.RowIsFull(i))
-                    return true;
-
-            return false;
-        }
-
-        public void CompleteRound() {
-            for (int i = 0; i < tileRows.Count; i++) {
-                if (tileRows[i].IsFull) {
-                    Tile tileToTransfer = tileRows[i].PrepareForTileTransfer();
-                    int pointsGained = tileGrid.AddTile(i, tileToTransfer);
-                    pointCounter.UpdatePoints(pointsGained);
-                }
-            }
-            int pointsLost = processingLine.Clear();
-            pointCounter.UpdatePoints(-pointsLost);
-        }
-
-        public abstract Task SelectTiles();
-        public abstract Task SelectRow();
-        
-        public void ManageSelectedTiles(List<Tile> tiles) {
-            MoveMade.type = tiles[0].TileType;
-            for (int i = 0; i < tiles.Count; i++) {
-                tiles[i].Move(playerCanvas, this, 0.05 + i * 0.075, 0.8, 0.1);
-            }
-
-            if (tiles[^1].TileType == TileType.First) {
-                processingLine.AddTile(tiles[^1]);
-                tiles.Remove(tiles[^1]);
-            }
-
-            selectedTiles = tiles;
-
-            _tilePlates.DisableUserInput();
-            _tilePlates.ClearSelectionCallback();
-            SelectRow();
-        }
-
-        public void TakeSelectedTiles(TileRow tileRow) {
-            MoveMade.row = (byte)tileRows.IndexOf(tileRow);
-
-            tileRow.AddTiles(selectedTiles);
-            RemoveSelectedTiles();
-        }
-
-        public void DiscardSelectedTiles() {
-            MoveMade.row = 5;
-            processingLine.AddTiles(selectedTiles);
-            RemoveSelectedTiles();
-        }
-
-        protected abstract void RemoveSelectedTiles();
-
-        public void SetPlayersTurn() => playerNamePanel.ShowPlayerTurn();
-        public void EndPlayersTurn() => playerNamePanel.HidePlayerTurn();
-
-        public void SelectTiles(TileType type) {}
-        public void HighlightTiles(TileType type) {}
-        public void UnhighlightTiles(TileType type) {}
-        
-        public void Focus() {
-            _translateTransform.X = -Canvas.GetLeft(playerCanvas);
-            _translateTransform.Y = -Canvas.GetTop(playerCanvas);
-            
-            _scaleTransform.ScaleX = _mainCanvas.ActualWidth / playerCanvas.ActualWidth;
-            _scaleTransform.ScaleY = _scaleTransform.ScaleX;
+        public async Task MakeMove(GeneralGameState generalGameState) {
+            SetPlayersTurn();
+            var moveToMake = PlayerAI.ChooseMove(generalGameState);
+            PlayerBoardState.MoveMade = moveToMake;
+            await playerUI.MakeMove(moveToMake);
+            EndPlayersTurn();
+            NotifyAboutCompletion();
         }
     }
 }

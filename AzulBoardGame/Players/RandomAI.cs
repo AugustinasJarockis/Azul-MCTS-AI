@@ -1,121 +1,59 @@
-﻿using AzulBoardGame.Extensions;
-using AzulBoardGame.GameTilePlates;
-using AzulBoardGame.PlayerBoard.PlayerTileRow;
+﻿using AzulBoardGame.Enums;
+using AzulBoardGame.GameState;
 using AzulBoardGame.Players.PlayerBase;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace AzulBoardGame.Players
 {
-    internal class RandomAI : Player
+    internal class RandomAI : IPlayerAI
     {
         private Random rnd = new(DateTime.Now.Microsecond * DateTime.Now.Millisecond);
-        private readonly bool _pauseBetweenChoices;
 
-        private Image? waitButton = null;
-        private TaskCompletionSource<bool>? waiter = null;
-        public RandomAI(
-            Canvas mainCanvas,
-            ScaleTransform scaleTransform,
-            TranslateTransform translateTransform,
-            Action notifyAboutCompletion,
-            TilePlates tilePlates,
-            ITileBank tileBank,
-            string name,
-            Brush nameColour,
-            Key keyToFocus,
-            double xPos,
-            double yPos,
-            double size,
-            bool pauseBetweenChoices = false
-            )
-            : base(mainCanvas, scaleTransform, translateTransform, notifyAboutCompletion, tilePlates, tileBank, name, nameColour, keyToFocus, xPos, yPos, size) {
+        public (byte, TileType) SelectTiles(GeneralGameState gameState) {
+            TilePlatesState tilePlates = gameState.TilePlatesState;
+            PlayerBoardState playerBoard = gameState.PlayerBoardStates[gameState.CurrentPlayer];
 
-            _pauseBetweenChoices = pauseBetweenChoices;
+            int centerTilesExist = tilePlates.CenterTileCount != 0 ? 1 : 0;
 
-            if (_pauseBetweenChoices) {
-
-                waitButton = new Image {
-                    Source = new BitmapImage(new Uri("Textures/continue.png", UriKind.Relative)),
-                    Visibility = Visibility.Hidden
-                };
-
-                mainCanvas.Loaded += (s, e) => {
-                    mainCanvas.Dispatcher.BeginInvoke(() => {
-                        mainCanvas.SetRelativePosCentered(waitButton, 0.5, 0.9, 0.1, 0.3);
-                    });
-                };
-
-                mainCanvas.Children.Add(waitButton);
-
-                waitButton.MouseDown += (s, a) => waiter?.TrySetResult(true);
-                waitButton.MouseEnter += (s, a) => waitButton.Opacity = 0.5;
-                waitButton.MouseLeave += (s, a) => waitButton.Opacity = 1.0;
-            }
-        }
-
-        public override async Task SelectTiles() {
-            await WaitToContinue();
-            SetPlayersTurn();
-            _tilePlates.SetSelectionCallback(ManageSelectedTiles);
-
-            int centerTilesExist = _tilePlates.CenterTileCount != 0 ? 1 : 0;
-
-            var plates = _tilePlates.Plates.Where(p => !p.IsEmpty).ToList();
+            var plates = tilePlates.Plates.Where(p => !p.IsEmpty).ToList();
             int selection = rnd.Next(plates.Count + centerTilesExist);
 
             if (selection == 0 && centerTilesExist != 0) {
-                var centerTileTypes = _tilePlates.CenterTileTypes;
-                int tileToSelect = rnd.Next(_tilePlates.CenterTileTypes.Count);
+                var centerTileTypes = tilePlates.CenterTileTypes;
+                int tileToSelect = rnd.Next(tilePlates.CenterTileTypes.Count);
                 var selectedType = centerTileTypes[tileToSelect];
-                MoveMade.plateNr = 0;
-                _tilePlates.SelectTiles(selectedType);
+                return (0, selectedType);
             }
             else {
                 int tileToSelect = rnd.Next(4);
                 var selectedType = plates[selection - centerTilesExist].TileTypes[tileToSelect];
-                MoveMade.plateNr = (byte)(_tilePlates.Plates.IndexOf(plates[selection - centerTilesExist]) + 1);
-                plates[selection - centerTilesExist].SelectTiles(selectedType);
+                return ((byte)(tilePlates.Plates.IndexOf(plates[selection - centerTilesExist]) + 1), selectedType);
             }
         }
 
-        public override async Task SelectRow() {
-            await WaitToContinue();
-            List<TileRow> possibleRows = [];
-            
-            for (int i = 0; i < tileRows.Count; i++) {
-                if (!tileRows[i].IsFull
-                    && (tileRows[i].RowTileType == null || tileRows[i].RowTileType == selectedTiles[0].TileType)
-                    && !tileGrid.RowHasType(i, selectedTiles[0].TileType))
+        public int SelectRow(PlayerBoardState playerState, TileType selectedType) {
+            List<TileRowState> possibleRows = [];
 
-                    possibleRows.Add(tileRows[i]);
+            for (int i = 0; i < playerState.tileRows.Count; i++) {
+                if (!playerState.tileRows[i].IsFull
+                    && (playerState.tileRows[i].RowTileType == null || playerState.tileRows[i].RowTileType == selectedType)
+                    && !playerState.tileGrid.RowHasType(i, selectedType))
+
+                    possibleRows.Add(playerState.tileRows[i]);
             }
 
             if (possibleRows.Count > 0) {
                 int rowToSelect = rnd.Next(possibleRows.Count);
-                TakeSelectedTiles(possibleRows[rowToSelect]);
+                return rowToSelect;
             }
             else {
-                DiscardSelectedTiles();
+                return 5;
             }
         }
-
-        protected override void RemoveSelectedTiles() {
-            selectedTiles.Clear();
-            EndPlayersTurn();
-            NotifyAboutCompletion();
-        }
-
-        private async Task WaitToContinue() {
-            if (_pauseBetweenChoices) {
-                waiter = new();
-                waitButton!.Visibility = Visibility.Visible;
-                await waiter.Task;
-                waitButton.Visibility = Visibility.Hidden;
-            }
+        public (byte, TileType, byte) ChooseMove(GeneralGameState gameState) {
+            (byte plate, TileType type, byte row) moveToMake;
+            (moveToMake.plate, moveToMake.type) = SelectTiles(gameState);
+            moveToMake.row = (byte)SelectRow(gameState.PlayerBoardStates[gameState.CurrentPlayer], moveToMake.type);
+            return moveToMake;
         }
     }
 }
