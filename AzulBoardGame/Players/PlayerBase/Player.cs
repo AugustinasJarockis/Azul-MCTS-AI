@@ -1,9 +1,8 @@
-﻿using AzulBoardGame.GameTilePlates;
-using AzulBoardGame.GameState;
-using System.Windows.Controls;
+﻿using AzulBoardGame.GameState;
+using AzulBoardGame.GameTilePlates;
+using AzulBoardGame.Utilities;
 using System.Windows.Input;
 using System.Windows.Media;
-using AzulBoardGame.Utilities;
 
 namespace AzulBoardGame.Players.PlayerBase
 {

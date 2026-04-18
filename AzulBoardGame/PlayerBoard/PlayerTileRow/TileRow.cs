@@ -1,6 +1,7 @@
 ﻿using AzulBoardGame.Enums;
 using AzulBoardGame.Extensions;
 using AzulBoardGame.GameState;
+using AzulBoardGame.GameComponentInterfaces;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -94,9 +95,9 @@ namespace AzulBoardGame.PlayerBoard.PlayerTileRow
         }
 
         public Tile PrepareForTileTransfer() {
-            State.PrepareForTileTransfer(); //TODO: Pazet ar viskas gerai, kad nediscardinam realiai
+            State.PrepareForTileTransfer(_tileBank); //TODO: Pazet ar viskas gerai, kad nediscardinam realiai
             var firstTile = rowTiles[0];
-            _tileBank.DiscardTiles(rowTiles[0].TileType, rowTiles.Count - 1); //Šitas būtinas, nes state to nedaro
+            //_tileBank.DiscardTiles(rowTiles[0].TileType, rowTiles.Count - 1); //Šitas būtinas, nes state to nedaro // Dabar daro
 
             for (int i = 1; i < rowTiles.Count; i++)
                 rowTiles[i].Destroy();

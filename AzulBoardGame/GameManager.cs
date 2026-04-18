@@ -1,7 +1,9 @@
-﻿using AzulBoardGame.Enums;
+﻿using AzulAIAndGameState.Players.MCTS_CNN;
+using AzulBoardGame.Enums;
 using AzulBoardGame.Extensions;
 using AzulBoardGame.GameState;
 using AzulBoardGame.GameTilePlates;
+using AzulBoardGame.Players;
 using AzulBoardGame.Players.MCTS;
 using AzulBoardGame.Players.MCTS.MCTSVariants;
 using AzulBoardGame.Players.PlayerBase;
@@ -57,16 +59,16 @@ namespace AzulBoardGame
             };
 
             if (runTests) {
-                Test(900, "RepeatedBestAgentTests.csv");
-                RunTests();
+                Test(100, "PolicyVsRandom.csv");
+                //RunTests();
             }
         }
 
         private void CreateGameBoardObjects() {
 
             //Create Player AIs
-            var player1 = new MCTSAIScoreDiffAvg();
-            var player2 = new MCTSAIScoreTotalAvg();
+            var player1 = new RandomAI();
+            var player2 = new PolicyNetworkAI("Models/model92.nn");
 
             gameState = new(playerCount);
             victoryPopup = new VictoryPopup(_canvasControls.Canvas, ResetGame);
@@ -221,7 +223,7 @@ namespace AzulBoardGame
                     _canvasControls.Canvas.InvalidateVisual();
                     await Dispatcher.Yield(DispatcherPriority.Render);
                     recentMoves[gameState.CurrentPlayer] = gameState.PlayerBoardStates[gameState.CurrentPlayer].MoveMade;
-                    gameState.CurrentPlayer = (gameState.CurrentPlayer + 1) % players.Count;
+                    gameState.CurrentPlayer = (gameState.CurrentPlayer + 1) % players.Count; //TODO: investigate if potentially current player is updated thrice
                 }
 
                 await WaitToContinue();
@@ -232,7 +234,6 @@ namespace AzulBoardGame
 
             foreach (Player player in players)
                 player.CalculateAdditionalPoints();
-            }
         }
 
         public void NotifyAboutCompletion() => tcs?.TrySetResult(true);

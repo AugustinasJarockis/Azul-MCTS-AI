@@ -1,9 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36414.22 d17.14
+VisualStudioVersion = 17.14.36414.22
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzulBoardGame", "AzulBoardGame\AzulBoardGame.csproj", "{5664C87B-A870-43E2-9DBB-9BF23E4A669C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeadlessGameRunner", "HeadlessGameRunner\HeadlessGameRunner.csproj", "{998F3E71-8285-40A5-8E22-032A06E49868}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzulAIAndGameState", "AzulAIAndGameState\AzulAIAndGameState.csproj", "{D9C8C8C4-2619-4A75-8B84-68FC114F294E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{5664C87B-A870-43E2-9DBB-9BF23E4A669C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5664C87B-A870-43E2-9DBB-9BF23E4A669C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5664C87B-A870-43E2-9DBB-9BF23E4A669C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{998F3E71-8285-40A5-8E22-032A06E49868}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{998F3E71-8285-40A5-8E22-032A06E49868}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{998F3E71-8285-40A5-8E22-032A06E49868}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{998F3E71-8285-40A5-8E22-032A06E49868}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D9C8C8C4-2619-4A75-8B84-68FC114F294E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9C8C8C4-2619-4A75-8B84-68FC114F294E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9C8C8C4-2619-4A75-8B84-68FC114F294E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9C8C8C4-2619-4A75-8B84-68FC114F294E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

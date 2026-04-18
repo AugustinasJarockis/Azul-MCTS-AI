@@ -26,6 +26,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="TorchSharp" Version="0.106.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AzulAIAndGameState\AzulAIAndGameState.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Textures\continue.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>

@@ -1,5 +1,5 @@
 ﻿using AzulBoardGame.Enums;
-using System.Collections.ObjectModel;
+using AzulBoardGame.GameComponentInterfaces;
 
 namespace AzulBoardGame.PlayerBoard.PlayerTileGrid
 {
