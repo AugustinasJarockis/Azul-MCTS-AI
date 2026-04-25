@@ -1,0 +1,195 @@
+﻿using AzulAIAndGameState.NewFolder;
+using AzulBoardGame.Enums;
+using AzulBoardGame.Extensions;
+using AzulBoardGame.GameState;
+using AzulBoardGame.Players.MCTS_CNN;
+using TorchSharp;
+
+namespace AzulAIAndGameState.Players.MCTS_NN
+{
+    public class NeuralGameTreeNode
+    {
+        private readonly float yFade = 0.9f;
+        private readonly float lFade = 0.9f;
+
+        private readonly NeuralGameTreeNode? _parent = null;
+
+        private List<NeuralGameTreeNode> reachableStates = [];
+
+        private List<(byte, TileType, byte)> possibleMoves = [];
+        private float[] filteredPolicyArray = [];
+        public torch.Tensor PredictedPolicy { get; private set; }
+        public float NetworkValue { get; private set; } = 0;
+
+        private PolicyValueNetwork _network;
+
+        public float ProbabilityToReach { get; private set; } = 0;
+        public int EndsReached { get; set; } = 0;
+        public double CumulativeAttemptScore { get; set; } = 0;
+        public double CalculatedValue => CumulativeAttemptScore / EndsReached;
+
+        private GeneralGameState _gameState;
+
+        private int playerOfInterest = 0; //TODO: sutvarkyti su šituo
+
+        public NeuralGameTreeNode(GeneralGameState gameState, PolicyValueNetwork network, int playerOfInterest) {
+            _gameState = gameState;
+            _network = network;
+            this.playerOfInterest = playerOfInterest;
+
+            GeneratePossibleMovesAndEval();
+        }
+
+        public NeuralGameTreeNode(NeuralGameTreeNode parent, GeneralGameState gameState, PolicyValueNetwork network, float probabilityToReach, int playerOfInterest) {
+            _parent = parent;
+            _gameState = gameState;
+            _network = network;
+            ProbabilityToReach = probabilityToReach;
+            this.playerOfInterest = playerOfInterest;
+        }
+
+        public NeuralGameTreeNode GetSyncWithManager(int playerCount, GeneralGameState currentGameState) {
+            if (_gameState.TilePlatesState.TotalTileCount == 0)
+                return new(currentGameState.Copy(), _network, playerOfInterest);
+
+            if (playerCount == 0)
+                return this;
+
+            var playerToMakeAMove = (currentGameState.PlayerCount - playerCount + _gameState.CurrentPlayer) % currentGameState.PlayerCount;
+            var recentMove = currentGameState.PlayerBoardStates[playerToMakeAMove].MoveMade;
+
+            if (recentMove != null
+                && possibleMoves.Contains(((byte, TileType, byte))recentMove!)
+            ) {
+                var indexOfMove = possibleMoves.IndexOf(((byte, TileType, byte))recentMove);
+                if (indexOfMove < reachableStates.Count) {
+                    return reachableStates[indexOfMove].GetSyncWithManager(playerCount - 1, currentGameState);
+                }
+            }
+            return new(currentGameState.Copy(), _network, playerOfInterest);
+        }
+
+        private void Backpropagate(torch.Tensor accumulatedLoss, float advantage, float futureValue, torch.Tensor FuturePredictedPolicy) {
+            var state = _gameState.GetListState().Flatten().Select(x => (float)x).ToArray().ToTensor([1, 121]);
+            var (policy, value) = _network.Call(state);
+            int processingLinePunish = _gameState.PlayerBoardStates[_gameState.CurrentPlayer].MoveMade?.Item3 == 5 ? -100 : 0;
+            float newAdvantage = 0 + yFade * value.item<float>() - NetworkValue + lFade * yFade * advantage;
+            //accumulatedLoss += (FuturePredictedPolicy / policy) * newAdvantage;
+            accumulatedLoss += -(policy / policy) * newAdvantage;
+            //accumulatedLoss += (policy / PredictedPolicy) * newAdvantage;
+            if (_parent != null) {
+                _parent?.Backpropagate(accumulatedLoss, -newAdvantage, processingLinePunish, policy);
+            }
+            else {
+                _network.TrainWithLoss(accumulatedLoss - futureValue);
+            }
+            NetworkValue = value.item<float>();
+            CumulativeAttemptScore -= NetworkValue;
+            EvaluatePosition(); //TODO: this is hacky
+            CumulativeAttemptScore += NetworkValue;
+        }
+
+        public (byte, TileType, byte) GetBestMove() => possibleMoves[reachableStates.IndexOf(reachableStates.MaxBy(s => s.EndsReached))];
+
+        public torch.Tensor GetUpdatedPolicyTensor() {
+            var possibleMoveTensor = reachableStates.Select(s => s.CalculatedValue).ToArray().ToTensor([reachableStates.Count]).softmax(1);
+            var correctPolicyTensor = torch.zeros([1, 6, 5, 6]);
+            for (int i = 0; i < possibleMoves.Count; i++) {
+                var move = possibleMoves[i];
+                correctPolicyTensor[0, move.Item1, (long)move.Item2 - 1, move.Item3] = possibleMoveTensor[i];
+            }
+
+            return correctPolicyTensor;
+        }
+
+        private void EvaluatePosition() {
+            var state = _gameState.GetListState().Flatten().Select(x => (float)x).ToArray().ToTensor([1, 121]);
+            var (policy, value) = _network.Call(state);
+            PredictedPolicy = policy;
+            NetworkValue = value[0].item<float>();
+        }
+
+        private void GeneratePossibleMovesAndEval() {
+            EvaluatePosition();
+            CumulativeAttemptScore = NetworkValue;
+            List<float> filteredPolicy = [];
+            for (int i = 0; i < 180; i++) {
+                var potentialMove = MoveConverter.MoveIntToTuple(i);
+                if (_gameState.IsMovePossible(potentialMove)) {
+                    possibleMoves.Add(potentialMove);
+                    filteredPolicy.Add(PredictedPolicy.view(-1)[i].item<float>());
+                }
+            }
+
+            filteredPolicyArray = filteredPolicy.ToArray().ToTensor([filteredPolicy.Count]).softmax(0).data<float>().ToArray();
+            var possibleMovesArray = possibleMoves.ToArray();
+            Array.Sort(filteredPolicyArray, possibleMovesArray, Comparer<float>.Create((a, b) => b.CompareTo(a)));
+            possibleMoves = possibleMovesArray.ToList();
+            EndsReached = 1;
+        }
+
+        private void GenerateReachableStates() {
+            while (reachableStates.Count != possibleMoves.Count) {
+                var newNode = new NeuralGameTreeNode(this, _gameState.Copy(), _network, filteredPolicyArray[reachableStates.Count], playerOfInterest);
+                var move = possibleMoves[reachableStates.Count];
+
+                newNode.MakeMove(move);
+                var attemptValue = newNode.NetworkValue;
+                reachableStates.Add(newNode);
+
+                //EndsReached++;
+                //CumulativeAttemptScore += attemptValue;
+            }
+        }
+
+        private void MakeMove((byte, TileType, byte) move) {
+            _gameState.MakeMove(move);
+
+            GeneratePossibleMovesAndEval();
+        }
+
+        public double PlayOut() {
+            if (_gameState.PlayerBoardStates.Any(p => p.HasFinished()) || _gameState.TilePlatesState.TotalTileCount == 0) {
+                foreach (var player in _gameState.PlayerBoardStates)
+                    player.CompleteRound(_gameState.TileBankState);
+
+                foreach (var player in _gameState.PlayerBoardStates)
+                    player.CalculateAdditionalPoints();
+
+                CumulativeAttemptScore = Math.Sign(PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates));
+                EndsReached = 1;
+
+                var state = _gameState.GetListState().Flatten().Select(x => (float)x).ToArray().ToTensor([1, 121]);
+                var (policy, value) = _network.Call(state);
+                _parent?.Backpropagate(accumulatedLoss: 0.0f, (float)-CumulativeAttemptScore, -value.item<float>(), policy);
+                EvaluatePosition();
+                return CumulativeAttemptScore;
+            }
+
+            if (reachableStates.Count != possibleMoves.Count) {
+                GenerateReachableStates();
+                return NetworkValue;
+            }
+
+            double attemptValue = (double)reachableStates.MaxBy(
+                s => (s.CumulativeAttemptScore / s.EndsReached) + 2 * (s.ProbabilityToReach * (Math.Sqrt(EndsReached) / (1 + s.EndsReached)))
+                )?.PlayOut()!;
+            
+            EndsReached++;
+            CumulativeAttemptScore += attemptValue;
+            return attemptValue;
+        }
+        public static double PointDifference(int playerOfInterest, List<PlayerBoardState> players) {
+            var orderedPlayers = players.OrderBy(p => p.Points);
+            var winningPlayer = orderedPlayers.First();
+            bool isWinner = players.IndexOf(winningPlayer) == playerOfInterest;
+            if (isWinner) {
+                var secondPlayer = orderedPlayers.Skip(1).First();
+                return winningPlayer.Points - secondPlayer.Points;
+            }
+            else {
+                return players[playerOfInterest].Points - winningPlayer.Points;
+            }
+        }
+    }
+}

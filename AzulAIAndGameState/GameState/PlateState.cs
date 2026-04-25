@@ -14,6 +14,8 @@ namespace AzulBoardGame.GameState
             _tiles = tiles;
         }
 
+        public PlateState(List<int> listState) : this(listState.Where(e => e != 0).Select(e => (TileType)e).ToList()) {}
+
         public void PlaceTiles(List<TileType> tileTypes) => _tiles.AddRange(tileTypes);
         public void Clear() => _tiles.Clear();
         public PlateState Copy() {

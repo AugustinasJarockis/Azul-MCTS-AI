@@ -6,8 +6,8 @@ namespace AzulBoardGame.GameState
     {
         public bool firstTileExist = true;
         private List<TileType> centerTiles = [];
-
         public List<PlateState> Plates = [];
+
         public List<TileType> CenterTileTypes => centerTiles;
         public int CenterTileCount => centerTiles.Count;
         public int TotalTileCount => CenterTileCount + Plates.Sum(p => p.TileCount);
@@ -22,6 +22,22 @@ namespace AzulBoardGame.GameState
             firstTileExist = firstTileExistValue;
             Plates = platesCopy;
             centerTiles = centerTilesCopy;
+        }
+
+        public TilePlatesState((List<int>, List<List<int>>) listState) {
+            firstTileExist = listState.Item1[0] == 1;
+            for (int i = 1; i < 16; i++) {
+                if (listState.Item1[i] != 0) {
+                    centerTiles.Add((TileType)listState.Item1[i]);
+                }
+                else {
+                    break;
+                }
+            }
+
+            foreach (var plateListState in listState.Item2) {
+                Plates.Add(new (plateListState));
+            }
         }
 
         public TilePlatesState Copy() {

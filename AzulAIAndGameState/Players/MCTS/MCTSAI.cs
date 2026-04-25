@@ -15,8 +15,7 @@ namespace AzulBoardGame.Players.MCTS
             _stateEvaluator = evaluator;
         }
 
-        public (byte, TileType, byte) SelectTiles(GeneralGameState gameState) {
-            // Logic
+        public (byte, TileType, byte) ChooseMove(GeneralGameState gameState) {
             if (gameTree == null) {
                 gameTree = new(gameState.Copy(), _stateEvaluator, gameState.CurrentPlayer);
             }
@@ -30,12 +29,8 @@ namespace AzulBoardGame.Players.MCTS
             }
             timer.Stop();
 
-            Console.WriteLine("Nodes visited: " + gameTree.EndsReached);
+            //Console.WriteLine("Nodes visited: " + gameTree.EndsReached);
             return gameTree.GetBestMove();
-        }
-
-        public (byte, TileType, byte) ChooseMove(GeneralGameState gameState) {
-            return SelectTiles(gameState);
         }
     }
 }

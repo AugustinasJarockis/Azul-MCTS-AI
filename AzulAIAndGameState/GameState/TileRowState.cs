@@ -23,6 +23,13 @@ namespace AzulBoardGame.GameState
             rowTiles = rowTilesCopy;
         }
 
+        public TileRowState((int, int) listState, int capacity) {
+            Capacity = capacity;
+            for (int i = 0; i < listState.Item1; i++) {
+                rowTiles.Add((TileType)listState.Item2);
+            }
+        }
+
         public TileRowState Copy() {
             return new(Capacity, [.. rowTiles]);
         }

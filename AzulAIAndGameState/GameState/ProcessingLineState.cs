@@ -16,21 +16,22 @@ namespace AzulBoardGame.GameState
 
         public void Reset() => _processedTiles.Clear();
         
-        public List<int> GetListState() {
-            List<int> stateList = [];
+        public int GetListState() {
+            //List<int> stateList = [];
 
-            for (int i = 0; i < 7; i++) {
-                if (_processedTiles.Count > i) {
-                    if (_processedTiles[i] == TileType.First) {
-                        stateList.Add(6);
-                        continue;
-                    }
-                    stateList.Add((int)_processedTiles[i]);
-                }
-                else
-                    stateList.Add(0);
-            }
-            return stateList;
+            //for (int i = 0; i < 7; i++) {
+            //    if (_processedTiles.Count > i) {
+            //        if (_processedTiles[i] == TileType.First) {
+            //            stateList.Add(6);
+            //            continue;
+            //        }
+            //        stateList.Add((int)_processedTiles[i]);
+            //    }
+            //    else
+            //        stateList.Add(0);
+            //}
+
+            return GetPointLoss();
         }
         public void AddTile(TileType tile, ITileBank tileBank) {
             if (_processedTiles.Count < 7) {

@@ -15,7 +15,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
             _model.load(modelPath);
         }
         public (byte, TileType, byte) ChooseMove(GeneralGameState gameState) {
-            var state = gameState.GetListState().Flatten().Select(x => (float)x).ToArray().ToTensor([1, 134]);
+            var state = gameState.GetListState().Flatten().Select(x => (float)x).ToArray().ToTensor([1, 121]);
 
             var (policy, _) = _model.Call(state);
             policy = policy[0].softmax(0);
@@ -27,29 +27,12 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
             //    moveArray.Add(policy.view(-1)[i].item<float>());
             //}
             
-            while (!IsMovePossible(move, gameState)) {
+            while (!gameState.IsMovePossible(MoveConverter.MoveIntToTuple(move))) {
                 policy.view(-1)[move] = -1;
                 move = (int)policy.argmax().item<long>();
             }
 
             return MoveConverter.MoveIntToTuple(move);
-        }
-
-        private bool IsMovePossible(int move, GeneralGameState gameState) {
-            (byte plate, TileType type, byte row) = MoveConverter.MoveIntToTuple(move);
-            
-            if (plate == 0 && !gameState.TilePlatesState.CenterTileTypes.Contains(type)) {
-                return false;
-            }
-
-            if (plate != 0 && !gameState.TilePlatesState.Plates[plate - 1].TileTypes.Contains(type)) {
-                return false;
-            }
-
-            if (row != 5 && !gameState.PlayerBoardStates[gameState.CurrentPlayer].CanBePlacedIntoRow(type, row))
-                return false;
-
-            return true;
         }
     }
 }

@@ -2,10 +2,10 @@
 {
     public static class GameStateListExtensions
     {
-        public static List<int> Flatten(this (int, int, List<(List<List<int>>, List<(int, int)>, List<int>, int)>, (List<int>, List<List<int>>), List<int>) state) {
-            List<int> result = [state.Item1, state.Item2];
+        public static List<int> Flatten(this (int, List<(List<List<int>>, List<(int, int)>, int, int)>, (List<int>, List<List<int>>), List<int>) state) {
+            List<int> result = [state.Item1];
 
-            foreach (var item in state.Item3) {
+            foreach (var item in state.Item2) {
 
                 foreach (var rowState in item.Item1) {
                     result.AddRange(rowState);
@@ -16,28 +16,27 @@
                     result.Add(rowState.Item2);
                 }
 
-                result.AddRange(item.Item3);
+                result.Add(item.Item3);
                 result.Add(item.Item4);
             }
 
-            result.AddRange(state.Item4.Item1);
-            foreach (var item in state.Item4.Item2) {
+            result.AddRange(state.Item3.Item1);
+            foreach (var item in state.Item3.Item2) {
                 result.AddRange(item);
             }
 
-            result.AddRange(state.Item5);
+            result.AddRange(state.Item4);
 
             return result;
         }
 
-        public static (int, int, List<(List<List<int>>, List<(int, int)>, List<int>, int)>, (List<int>, List<List<int>>), List<int>) ExpandToGameState(this List<int> stateList) {
-            int currentPlayer = stateList[0];
-            int nextRoundStartingPlayer = stateList[1];
-            List<(List<List<int>>, List<(int, int)>, List<int>, int)> playerBoardstates = [];
+        public static (int, List<(List<List<int>>, List<(int, int)>, int, int)>, (List<int>, List<List<int>>), List<int>) ExpandToGameState(this List<int> stateList) {
+            int nextRoundStartingPlayer = stateList[0];
+            List<(List<List<int>>, List<(int, int)>, int, int)> playerBoardstates = [];
 
             // Player states
             for (int i = 0; i < 2; i++) {
-                var playerStateList = stateList.Skip(2 + i * 43).Take(43);
+                var playerStateList = stateList.Skip(1 + i * 37).Take(37);
 
                 List<List<int>> gridStateList = [];
                 for (int i2 = 0; i2 < 5; i2++) {
@@ -50,24 +49,24 @@
                     rowStates.Add((rowStatesList[i * 2], rowStatesList[i * 2 + 1]));
                 }
 
-                List<int> processingLineState = [.. playerStateList.Skip(35).Take(7)];
+                int processingLineState = playerStateList.SkipLast(1).Last();
                 int playerPoints = playerStateList.Last();
 
                 playerBoardstates.Add((gridStateList, rowStates, processingLineState, playerPoints));
             }
 
             // Tile plates state
-            List<int> centerTiles = [.. stateList.Skip(88).Take(16)];
+            List<int> centerTiles = [.. stateList.Skip(75).Take(16)];
 
             List<List<int>> platesState = [];
             for (int i = 0; i < 5; i++) {
-                platesState.Add([.. stateList.Skip(104 + i * 4).Take(4)]);
+                platesState.Add([.. stateList.Skip(91 + i * 4).Take(4)]);
             }
 
             // Tile bank state
             List<int> tileBankState = [..stateList.TakeLast(10)];
 
-            return (currentPlayer, nextRoundStartingPlayer, playerBoardstates, (centerTiles, platesState), tileBankState);
+            return (nextRoundStartingPlayer, playerBoardstates, (centerTiles, platesState), tileBankState);
         }
     }
 }

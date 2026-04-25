@@ -7,8 +7,6 @@ namespace AzulBoardGame.Players.MCTS
 {
     public class GameTreeNode
     {
-        static private Random rnd = new(DateTime.Now.Microsecond * DateTime.Now.Millisecond);
-
         private readonly IStateEvaluator _stateEvaluator;
 
         private List<GameTreeNode> reachableStates = [];

@@ -32,6 +32,13 @@ namespace AzulBoardGame.PlayerBoard.PlayerTileGrid
             }
         }
 
+        public TileGridState(List<List<int>> listState) {
+            doneTiles = [];
+            foreach (var line in listState) {
+                doneTiles.Add([.. line.Select<int, TileType?>(e => e == 0 ? null : (TileType)e)]);
+            }
+        }
+
         public TileGridState Copy() {
             return new TileGridState(doneTiles);
         }

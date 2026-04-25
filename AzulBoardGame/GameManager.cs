@@ -1,4 +1,5 @@
 ﻿using AzulAIAndGameState.Players.MCTS_CNN;
+using AzulAIAndGameState.Players.MCTS_NN;
 using AzulBoardGame.Enums;
 using AzulBoardGame.Extensions;
 using AzulBoardGame.GameState;
@@ -42,7 +43,16 @@ namespace AzulBoardGame
         private int playerCount = 2;
         public int PlayerCount => players.Count;
         public int PlateCount => gameState.TilePlatesState.Plates.Count;
-        public (byte plate, TileType type, byte row)?[] recentMoves = [null, null, null, null]; 
+        public (byte plate, TileType type, byte row)?[] recentMoves = [null, null, null, null];
+
+
+        //Create Player AIs
+        public IPlayerAI player1 = new RandomAI();
+        //var player1 = new MCTSnNNAI("Models/nmodel31.nn", trainingOn: true);
+        //public IPlayerAI player2 = new MCTSnNNAI("Models/hmodel48.nn", trainingOn: true);
+        public IPlayerAI player2 = new MCTSnNNAI("Models/legalmodel1.nn", trainingOn: true);
+
+
         public GameManager(Canvas mainCanvas, ScaleTransform scaleTransform, TranslateTransform translateTransform) {
             _canvasControls = new (){
                 Canvas = mainCanvas,
@@ -65,18 +75,13 @@ namespace AzulBoardGame
         }
 
         private void CreateGameBoardObjects() {
-
-            //Create Player AIs
-            var player1 = new RandomAI();
-            var player2 = new PolicyNetworkAI("Models/model92.nn");
-
             gameState = new(playerCount);
             victoryPopup = new VictoryPopup(_canvasControls.Canvas, ResetGame);
             tilePlates = new TilePlates(_canvasControls, this, Key.NumPad5, gameState.TilePlatesState);
             tileBank = new TileBank();
 
             //Agents to be tested
-            players.Add(new(gameState.PlayerBoardStates[0], player1, _canvasControls, NotifyAboutCompletion, tilePlates, tileBank, "Petras", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35, true));
+            players.Add(new(gameState.PlayerBoardStates[0], player1, _canvasControls, NotifyAboutCompletion, tilePlates, tileBank, "Petras", Brushes.Red, Key.NumPad1, 0.18, 0.82, 0.35));
             players.Add(new(gameState.PlayerBoardStates[1], player2, _canvasControls, NotifyAboutCompletion, tilePlates, tileBank, "Jonas", Brushes.Blue, Key.NumPad2, 0.18, 0.18, 0.35));
             
             if (waitBeforeTurnEnd) {
@@ -206,6 +211,7 @@ namespace AzulBoardGame
         private async Task RunMatch() {
             await PlayGame();
             var winningPlayer = players.First(p => p.Points == players.Max(p => p.Points));
+            ((MCTSnNNAI)players[1].PlayerAI).SaveModel("Models/RL2.nn");
 
             victoryPopup.Show(winningPlayer.Name, winningPlayer.Points);
             gameStarted = false;

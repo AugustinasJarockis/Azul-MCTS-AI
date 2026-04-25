@@ -36,6 +36,15 @@ namespace AzulBoardGame.GameState
             this.tileGrid = tileGrid;
         }
 
+        public PlayerBoardState((List<List<int>>, List<(int, int)>, int, int) listState) {
+            tileGrid = new(listState.Item1);
+            for (int i = 0; i < listState.Item2.Count; i++) {
+                tileRows.Add(new (listState.Item2[i], i + 1));
+            }
+            processingLine = new ProcessingLineState(); //TODO: NOTE: processing line būsena nėra atkūriama, nes tai nėra įmanoma iš turimų duomenų
+            Points = listState.Item4 - GetAdditionalPoints();
+        }
+
         public PlayerBoardState Copy() {
             List<TileRowState> tileRowsCopies = [..tileRows.Select(r => r.Copy())];
             return new(Points, tileRowsCopies, [..selectedTiles], processingLine.Copy(), tileGrid.Copy());
@@ -51,8 +60,8 @@ namespace AzulBoardGame.GameState
             tileGrid.Reset();
         }
 
-        public (List<List<int>>, List<(int, int)>, List<int>, int) GetListState() 
-            => (tileGrid.GetListState(), [.. tileRows.Select(r => r.GetListState())], processingLine.GetListState(), Points);
+        public (List<List<int>>, List<(int, int)>, int, int) GetListState() 
+            => (tileGrid.GetListState(), [.. tileRows.Select(r => r.GetListState())], processingLine.GetListState(), Points + GetAdditionalPoints());
 
         public void UpdatePoints(int pointsChange) {
             Points += pointsChange;
@@ -90,7 +99,7 @@ namespace AzulBoardGame.GameState
             return moves;
         }
 
-        public void CalculateAdditionalPoints() {
+        public int GetAdditionalPoints() {
             int totalPointChange = 0;
             for (int i = 0; i < 5; i++) {
                 if (tileGrid.RowIsFull(i))
@@ -102,7 +111,11 @@ namespace AzulBoardGame.GameState
                 if (tileGrid.TypeIsComplete((TileType)(i + 1)))
                     totalPointChange += 10;
             }
+            return totalPointChange;
+        }
 
+        public void CalculateAdditionalPoints() {
+            int totalPointChange = GetAdditionalPoints();
             UpdatePoints(totalPointChange);
         }
 
@@ -130,7 +143,7 @@ namespace AzulBoardGame.GameState
             if (row == 5)
                 DiscardSelectedTiles(tileBank);
             else
-                TakeSelectedTiles(tileRows[row]);
+                TakeSelectedTiles(tileRows[row], tileBank);
         }
 
         public void ManageSelectedTiles(List<TileType> tiles, ITileBank tileBank) {
@@ -142,8 +155,9 @@ namespace AzulBoardGame.GameState
             selectedTiles = tiles;
         }
 
-        private void TakeSelectedTiles(TileRowState tileRow) {
-            tileRow.AddTiles(selectedTiles);
+        private void TakeSelectedTiles(TileRowState tileRow, ITileBank tileBank) {
+            var tilesToProcess = tileRow.AddTiles(selectedTiles);
+            processingLine.AddTiles(tilesToProcess, tileBank);
             RemoveSelectedTiles();
         }
 

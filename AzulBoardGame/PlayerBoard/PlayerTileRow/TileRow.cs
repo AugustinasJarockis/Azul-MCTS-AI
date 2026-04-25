@@ -91,6 +91,7 @@ namespace AzulBoardGame.PlayerBoard.PlayerTileRow
                 rowTiles.Add(tiles[0]);
                 tiles.RemoveAt(0);
             }
+            _processingLine.State.AddTiles([..tiles.Select(t => t.TileType)], _tileBank);
             _processingLine.AddTiles(tiles);
         }
 

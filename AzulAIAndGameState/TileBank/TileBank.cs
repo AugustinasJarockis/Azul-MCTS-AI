@@ -27,6 +27,8 @@ namespace AzulBoardGame
             TileDiscard = new(this.tileDiscard);
         }
 
+        public TileBank(List<int> listState) : this([..listState.Take(5)], [..listState.Skip(5).Take(5)]) { }
+
         public ITileBank Copy() {
             return new TileBank([.. tileReserve], [.. tileDiscard]);
         }

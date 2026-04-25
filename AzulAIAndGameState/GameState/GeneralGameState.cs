@@ -1,4 +1,5 @@
-﻿using AzulBoardGame.Enums;
+﻿using AzulAIAndGameState.NewFolder;
+using AzulBoardGame.Enums;
 
 namespace AzulBoardGame.GameState
 {
@@ -9,7 +10,7 @@ namespace AzulBoardGame.GameState
         public TilePlatesState TilePlatesState;
         public int PlayerCount => PlayerBoardStates.Count;
         public int CurrentPlayer { get; set; } = 0;
-        public int NextRoundStartingPlayer { get; set; } = 0;
+        public int NextRoundStartingPlayer { get; set; } = -1;
         
         public GeneralGameState(int playerCount) {
             TileBankState = new TileBank();
@@ -40,6 +41,16 @@ namespace AzulBoardGame.GameState
             CurrentPlayer = currentPlayer;
         }
 
+        public GeneralGameState((int, List<(List<List<int>>, List<(int, int)>, int, int)>, (List<int>, List<List<int>>), List<int>) listState) {
+            CurrentPlayer = 0;
+            NextRoundStartingPlayer = listState.Item1;
+            foreach (var playerListState in listState.Item2) {
+                PlayerBoardStates.Add(new(playerListState));
+            }
+            TilePlatesState = new(listState.Item3);
+            TileBankState = new TileBank(listState.Item4);
+        }
+
         public GeneralGameState Copy() {
             List<PlayerBoardState> playerStatesCopies = [..PlayerBoardStates.Select(p => p.Copy())];
             return new(playerStatesCopies, TileBankState.Copy(), TilePlatesState.Copy(), CurrentPlayer);
@@ -53,17 +64,30 @@ namespace AzulBoardGame.GameState
             TilePlatesState.Reset();
         }
 
-        public (int, int, List<(List<List<int>>, List<(int, int)>, List<int>, int)>, (List<int>, List<List<int>>), List<int>) GetListState() {
+        public (int, List<(List<List<int>>, List<(int, int)>, int, int)>, (List<int>, List<List<int>>), List<int>) GetListState() {
+            List<(List<List<int>>, List<(int, int)>, int, int)> playerStatesList = [.. PlayerBoardStates.Select(p => p.GetListState())];
+            if (CurrentPlayer == 1)
+                playerStatesList.Reverse();
+
             return (
-                CurrentPlayer,
-                NextRoundStartingPlayer,
-                [..PlayerBoardStates.Select(p => p.GetListState())],
+                (NextRoundStartingPlayer + CurrentPlayer) % 2,
+                playerStatesList,
                 TilePlatesState.GetListState(),
                 TileBankState.GetListState()
                 );
         }
 
-        public void StartNextRound() { //TODO: sync UI to state
+        public bool IsMovePossible((byte plate, TileType type, byte row) move) {
+            if (move.plate == 0 && !TilePlatesState.CenterTileTypes.Contains(move.type))
+                return false;
+            if (move.plate != 0 && !TilePlatesState.Plates[move.plate - 1].TileTypes.Contains(move.type))
+                return false;
+            if (move.row != 5 && !PlayerBoardStates[CurrentPlayer].CanBePlacedIntoRow(move.type, move.row))
+                return false;
+            return true;
+        }
+
+        public void StartNextRound() {
             CurrentPlayer = NextRoundStartingPlayer;
             foreach (var playerBoard in PlayerBoardStates) {
                 playerBoard.CompleteRound(TileBankState);
