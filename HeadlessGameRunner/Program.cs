@@ -1,6 +1,7 @@
 ﻿using AzulAIAndGameState.NewFolder;
 using AzulAIAndGameState.Players.MCTS_CNN;
 using AzulAIAndGameState.Players.MCTS_NN;
+using AzulAIAndGameState.Players.MCTS_NN.Networks;
 using AzulBoardGame.Enums;
 using AzulBoardGame.Extensions;
 using AzulBoardGame.GameState;
@@ -9,52 +10,37 @@ using AzulBoardGame.Players.MCTS.MCTSVariants;
 using AzulBoardGame.Players.MCTS_CNN;
 using AzulBoardGame.Players.PlayerBase;
 
-
-//((MCTSAI)players[0].PlayerAI).timeAllotedMs = 100;
-//((MCTSAI)players[1].PlayerAI).timeAllotedMs = 100;
-
 //Test(900, "RepeatedBestAgentTests.csv");
 //RunTests();
 //PlayGame();
 
 //GenerateMoves("GoodMoveDatabase.csv", 10000);
-//var thread1 = new Thread(() => new GameSetup().GenerateMoves("GoodMoveDatabase1.csv", 2500));
-//var thread2 = new Thread(() => new GameSetup().GenerateMoves("GoodMoveDatabase2.csv", 2500));
-//var thread3 = new Thread(() => new GameSetup().GenerateMoves("GoodMoveDatabase3.csv", 2500));
-//var thread4 = new Thread(() => new GameSetup().GenerateMoves("GoodMoveDatabase4.csv", 2500));
-
-//thread1.Start();
-//thread2.Start();
-//thread3.Start();
-//thread4.Start();
-
-//thread1.Join();
-//thread2.Join();
-//thread3.Join();
-//thread4.Join();
 
 //Parallel.For(0, 100, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
 //    i => new GameSetup().GenerateMoves("GoodMoveDatabase" + i + ".csv", 100));
 
 //Console.WriteLine("All threads finished");
 
-//var trainer = new NetworkTrainer("SmallerMoveDatabase.csv", "TrainingDataOnLegal.csv");
+var trainer = new NetworkTrainer("GoodMoveDatabaseFull.csv", "TrainingDataOnValue.csv");
 //var model = new PolicyValueNetwork("Models/hmodel48.nn");
+//var model = new PolicyNetwork();
+var model = new ValueNetwork();
 //trainer.TrainLegalAndNoProcessing(model, 50);
-//trainer.Train(model, 50);
+//trainer.Train(model, 100, 512);
+trainer.TrainValue(model, 100, 512);
 
 //Test(20, "RLLearning2.csv");
 //((MCTSnNNAI)players[0].PlayerAI).SaveModel("Models/RL4.nn");
 
-MergeFiles();
-void MergeFiles()
-{
-    for (int i = 0; i < 100; i++)
-    {
-        string contents = File.ReadAllText("GoodMoveDatabase" + i + ".csv");
-        File.AppendAllText("GoodMoveDatabaseFull.csv", contents);
-    }
-}
+//MergeFiles();
+//void MergeFiles()
+//{
+//    for (int i = 0; i < 100; i++)
+//    {
+//        string contents = File.ReadAllText("GoodMoveDatabase" + i + ".csv");
+//        File.AppendAllText("GoodMoveDatabaseFull.csv", contents);
+//    }
+//}
 
 public class GameSetup
 {
@@ -77,6 +63,10 @@ public class GameSetup
         Player2 = new(gameState.PlayerBoardStates[1], Player2AI);
     
         players = [Player1, Player2];
+
+
+        //((MCTSAI)players[0].PlayerAI).timeAllotedMs = 100;
+        //((MCTSAI)players[1].PlayerAI).timeAllotedMs = 100;
     }
 
     public void GenerateMoves(string filename, int gameCount) {

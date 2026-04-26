@@ -1,4 +1,5 @@
 ﻿using AzulAIAndGameState.NewFolder;
+using AzulAIAndGameState.Players.MCTS_NN.Networks;
 using AzulBoardGame.Extensions;
 using AzulBoardGame.GameState;
 using AzulBoardGame.Players.MCTS_CNN;
@@ -16,11 +17,12 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
         DatasetLoader testDatasetLoader;
         public NetworkTrainer(string filename, string trainingProcessData) {
             trainDatasetLoader = new(filename);
-            testDatasetLoader = trainDatasetLoader.SplitTestPart(1000);
+            testDatasetLoader = trainDatasetLoader.SplitTestPart(3000);
 
             _trainingProcessData = trainingProcessData;
         }
-        public void Train(PolicyValueNetwork model, int epochCount, int batchSize = 32) {
+        public void Train(PolicyNetwork model, int epochCount, int batchSize = 32) {
+            Console.WriteLine("Training started");
             float minTestLoss = float.MaxValue;
 
             for (int epoch = 0; epoch < epochCount;  epoch++) {
@@ -28,35 +30,31 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                 // Training
                 for (int i = 0; i < (trainDatasetLoader.DatasetSize + batchSize - 1) / batchSize; i++) {
                     (var states, var policies, var values) = trainDatasetLoader.GetBatch(batchSize);
-                    var statesTensor = torch.stack(states);
-                    var correctPolicyTensor = CreatePolicyTensor(policies);
-                    var correctValuesTensor = torch.from_array(values);
+                    var statesTensor = torch.stack(states).to(model.device);
 
-                    var (policy, value) = model.Call(statesTensor);
+                    var policy = model.Call(statesTensor);
 
-                    var policyLoss = functional.cross_entropy(policy.flatten(), correctPolicyTensor.flatten());
-                    var valueLoss = functional.mse_loss(value, correctValuesTensor.unsqueeze(1));
-                    var loss = policyLoss;// + valueLoss;
+                    var policyLoss = functional.cross_entropy(policy, policies);
 
-                    model.TrainWithLoss(loss);
+                    model.TrainWithLoss(policyLoss);
 
-                    trainingLoss += loss.item<float>() * batchSize;
+                    trainingLoss += policyLoss.item<float>() * batchSize;
+
+                    policy.Dispose();
                 }
 
                 // Testing
                 for (int i = 0; i < (testDatasetLoader.DatasetSize + batchSize - 1) / batchSize; i++) {
                     (var states, var policies, var values) = testDatasetLoader.GetBatch(batchSize);
-                    var statesTensor = torch.stack(states);
-                    var correctPolicyTensor = CreatePolicyTensor(policies);
-                    var correctValuesTensor = torch.from_array(values);
+                    var statesTensor = torch.stack(states).to(model.device);
 
-                    var (policy, value) = model.Call(statesTensor);
+                    var policy = model.Call(statesTensor);
 
-                    var policyLoss = functional.cross_entropy(policy.flatten(), correctPolicyTensor.flatten());
-                    var valueLoss = functional.mse_loss(value, correctValuesTensor.unsqueeze(1));
-                    var loss = policyLoss;// + valueLoss;
+                    var policyLoss = functional.cross_entropy(policy, policies);
 
-                    testLoss += loss.item<float>() * batchSize;
+                    testLoss += policyLoss.item<float>() * batchSize;
+
+                    policy.Dispose();
                 }
                 trainingLoss /= trainDatasetLoader.DatasetSize;
                 testLoss /= testDatasetLoader.DatasetSize;
@@ -67,7 +65,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                 if (minTestLoss > testLoss) {
                     minTestLoss = testLoss;
                     Console.WriteLine("Saving model on epoch nr." + epoch);
-                    model.save("Models/hmodel" + epoch + ".nn");
+                    model.save("Models/fullmodel" + epoch + ".v3.nn");
                 }
 
                 trainDatasetLoader.Shuffle();
@@ -75,7 +73,60 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
             }
         }
 
-        public void TrainLegalAndNoProcessing(PolicyValueNetwork model, int epochCount, int batchSize = 32) {
+        public void TrainValue(ValueNetwork model, int epochCount, int batchSize = 32)
+        {
+            Console.WriteLine("Value training started");
+            float minTestLoss = float.MaxValue;
+
+            for (int epoch = 0; epoch < epochCount; epoch++)
+            {
+                float trainingLoss = 0, testLoss = 0;
+                // Training
+                for (int i = 0; i < (trainDatasetLoader.DatasetSize + batchSize - 1) / batchSize; i++)
+                {
+                    (var states, _, var correctValues) = trainDatasetLoader.GetBatch(batchSize);
+                    var statesTensor = torch.stack(states).to(model.device);
+
+                    var value = model.Call(statesTensor);
+
+                    var valueLoss = functional.binary_cross_entropy_with_logits(value.flatten(), correctValues);
+
+                    model.TrainWithLoss(valueLoss);
+
+                    trainingLoss += valueLoss.item<float>() * batchSize;
+                }
+
+                // Testing
+                for (int i = 0; i < (testDatasetLoader.DatasetSize + batchSize - 1) / batchSize; i++)
+                {
+                    (var states, _, var correctValues) = testDatasetLoader.GetBatch(batchSize);
+                    var statesTensor = torch.stack(states).to(model.device);
+
+                    var value = model.Call(statesTensor);
+
+                    var valueLoss = functional.binary_cross_entropy_with_logits(value.flatten(), correctValues);
+
+                    testLoss += valueLoss.item<float>() * batchSize;
+                }
+                trainingLoss /= trainDatasetLoader.DatasetSize;
+                testLoss /= testDatasetLoader.DatasetSize;
+
+                string epochInfo = "Epoch: " + epoch + " ; Train loss: " + trainingLoss + " ; Test loss: " + testLoss + ";";
+                Console.WriteLine(epochInfo);
+                File.AppendAllText(_trainingProcessData, epochInfo + "\n");
+                if (minTestLoss > testLoss)
+                {
+                    minTestLoss = testLoss;
+                    Console.WriteLine("Saving model on epoch nr." + epoch);
+                    model.save("Models/valuemodel" + epoch + ".v0.nn");
+                }
+
+                trainDatasetLoader.Shuffle();
+                testDatasetLoader.Shuffle();
+            }
+        }
+
+        public void TrainLegalAndNoProcessing(PolicyNetwork model, int epochCount, int batchSize = 32) {
             float minTestLoss = float.MaxValue;
 
             for (int epoch = 0; epoch < epochCount; epoch++) {
@@ -84,11 +135,12 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                 for (int i = 0; i < (trainDatasetLoader.DatasetSize + batchSize - 1) / batchSize; i++) {
                     (var states, _, _) = trainDatasetLoader.GetBatch(batchSize);
                     var statesTensor = torch.stack(states);
-                    var (policy, _) = model.Call(statesTensor);
+                    //var (policy, _) = model.Call(statesTensor);
+                    var policy = model.Call(statesTensor);
 
                     var correctPolicyTensor = CreatePolicyTensorWithDecreasedIllegal(policy, states, batchSize);
 
-                    var policyLoss = functional.cross_entropy(policy.softmax(1).flatten(), correctPolicyTensor.flatten());
+                    var policyLoss = functional.cross_entropy(policy.flatten(), correctPolicyTensor.flatten());
 
                     //List<List<float>> policyValues = [];
                     //var softmaxPolicy = policy.softmax(1);
@@ -108,11 +160,12 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                 for (int i = 0; i < (testDatasetLoader.DatasetSize + batchSize - 1) / batchSize; i++) {
                     (var states, var policies, var values) = testDatasetLoader.GetBatch(batchSize);
                     var statesTensor = torch.stack(states);
-                    var (policy, _) = model.Call(statesTensor);
+                    //var (policy, _) = model.Call(statesTensor);
+                    var policy = model.Call(statesTensor);
 
                     var correctPolicyTensor = CreatePolicyTensorWithDecreasedIllegal(policy, states, batchSize);
 
-                    var policyLoss = functional.cross_entropy(policy.softmax(1).flatten(), correctPolicyTensor.flatten());
+                    var policyLoss = functional.cross_entropy(policy.flatten(), correctPolicyTensor.flatten());
 
                     testLoss += policyLoss.item<float>() * batchSize;
                 }
@@ -125,7 +178,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                 if (minTestLoss > testLoss) {
                     minTestLoss = testLoss;
                     Console.WriteLine("Saving model on epoch nr." + epoch);
-                    model.save("Models/Legal/legalmodel" + epoch + ".nn");
+                    model.save("Models/Legal/legalmodel" + epoch + ".v2.nn");
                 }
 
                 trainDatasetLoader.Shuffle();
@@ -135,9 +188,9 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
 
         private torch.Tensor CreatePolicyTensor(float[] correctMoves) {
             var correctPolicyTensor = torch.zeros([correctMoves.Length, 6, 5, 6]);
-            for (int i2 = 0; i2 < correctMoves.Length; i2++) {
-                var move = MoveConverter.MoveIntToTuple((int)correctMoves[i2]);
-                correctPolicyTensor[i2, move.Item1, (long)move.Item2 - 1, move.Item3] = 1;
+            for (int i = 0; i < correctMoves.Length; i++) {
+                var move = MoveConverter.MoveIntToTuple((int)correctMoves[i]);
+                correctPolicyTensor[i, move.Item1, (long)move.Item2 - 1, move.Item3] = 1;
             }
             return correctPolicyTensor;
         }
@@ -157,7 +210,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                     }
                 }
             }
-            return correctPolicyTensor.softmax(1);
+            return correctPolicyTensor;
         }
     }
 }

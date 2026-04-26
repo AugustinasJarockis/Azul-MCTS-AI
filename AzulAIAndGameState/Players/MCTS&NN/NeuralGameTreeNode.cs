@@ -1,4 +1,6 @@
 ﻿using AzulAIAndGameState.NewFolder;
+using AzulAIAndGameState.Players.MCTS_CNN;
+using AzulAIAndGameState.Players.MCTS_NN.Networks;
 using AzulBoardGame.Enums;
 using AzulBoardGame.Extensions;
 using AzulBoardGame.GameState;
@@ -21,7 +23,8 @@ namespace AzulAIAndGameState.Players.MCTS_NN
         public torch.Tensor PredictedPolicy { get; private set; }
         public float NetworkValue { get; private set; } = 0;
 
-        private PolicyValueNetwork _network;
+        private PolicyNetwork _policyNetwork;
+        private ValueNetwork _valueNetwork;
 
         public float ProbabilityToReach { get; private set; } = 0;
         public int EndsReached { get; set; } = 0;
@@ -32,25 +35,27 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 
         private int playerOfInterest = 0; //TODO: sutvarkyti su šituo
 
-        public NeuralGameTreeNode(GeneralGameState gameState, PolicyValueNetwork network, int playerOfInterest) {
+        public NeuralGameTreeNode(GeneralGameState gameState, PolicyNetwork policyNetwork, ValueNetwork valueNetwork, int playerOfInterest) {
             _gameState = gameState;
-            _network = network;
+            _policyNetwork = policyNetwork;
+            _valueNetwork = valueNetwork;
             this.playerOfInterest = playerOfInterest;
 
             GeneratePossibleMovesAndEval();
         }
 
-        public NeuralGameTreeNode(NeuralGameTreeNode parent, GeneralGameState gameState, PolicyValueNetwork network, float probabilityToReach, int playerOfInterest) {
+        public NeuralGameTreeNode(NeuralGameTreeNode parent, GeneralGameState gameState, PolicyNetwork policyNetwork, ValueNetwork valueNetwork, float probabilityToReach, int playerOfInterest) {
             _parent = parent;
             _gameState = gameState;
-            _network = network;
+            _policyNetwork = policyNetwork;
+            _valueNetwork = valueNetwork;
             ProbabilityToReach = probabilityToReach;
             this.playerOfInterest = playerOfInterest;
         }
 
         public NeuralGameTreeNode GetSyncWithManager(int playerCount, GeneralGameState currentGameState) {
             if (_gameState.TilePlatesState.TotalTileCount == 0)
-                return new(currentGameState.Copy(), _network, playerOfInterest);
+                return new(currentGameState.Copy(), _policyNetwork, _valueNetwork, playerOfInterest);
 
             if (playerCount == 0)
                 return this;
@@ -66,12 +71,13 @@ namespace AzulAIAndGameState.Players.MCTS_NN
                     return reachableStates[indexOfMove].GetSyncWithManager(playerCount - 1, currentGameState);
                 }
             }
-            return new(currentGameState.Copy(), _network, playerOfInterest);
+            return new(currentGameState.Copy(), _policyNetwork, _valueNetwork, playerOfInterest);
         }
 
         private void Backpropagate(torch.Tensor accumulatedLoss, float advantage, float futureValue, torch.Tensor FuturePredictedPolicy) {
             var state = _gameState.GetListState().Flatten().Select(x => (float)x).ToArray().ToTensor([1, 121]);
-            var (policy, value) = _network.Call(state);
+            var policy = _policyNetwork.Call(state);
+            var value = _valueNetwork.Call(state);
             int processingLinePunish = _gameState.PlayerBoardStates[_gameState.CurrentPlayer].MoveMade?.Item3 == 5 ? -100 : 0;
             float newAdvantage = 0 + yFade * value.item<float>() - NetworkValue + lFade * yFade * advantage;
             //accumulatedLoss += (FuturePredictedPolicy / policy) * newAdvantage;
@@ -81,7 +87,8 @@ namespace AzulAIAndGameState.Players.MCTS_NN
                 _parent?.Backpropagate(accumulatedLoss, -newAdvantage, processingLinePunish, policy);
             }
             else {
-                _network.TrainWithLoss(accumulatedLoss - futureValue);
+                _policyNetwork.TrainWithLoss(accumulatedLoss - futureValue);
+                _valueNetwork.TrainWithLoss(accumulatedLoss - futureValue);
             }
             NetworkValue = value.item<float>();
             CumulativeAttemptScore -= NetworkValue;
@@ -103,8 +110,21 @@ namespace AzulAIAndGameState.Players.MCTS_NN
         }
 
         private void EvaluatePosition() {
-            var state = _gameState.GetListState().Flatten().Select(x => (float)x).ToArray().ToTensor([1, 121]);
-            var (policy, value) = _network.Call(state);
+            var stateList = _gameState.GetListState().Flatten().Select(x => (float)x).ToList();
+            float[] possibleMoveArray = new float[180];
+            var possibleMoves = _gameState.PlayerBoardStates[_gameState.CurrentPlayer].GetPossibleMoves(_gameState.TilePlatesState);
+            for (int i2 = 0; i2 < 180; i2++)
+            {
+                if (possibleMoves.Contains(MoveConverter.MoveIntToTuple(i2)))
+                {
+                    possibleMoveArray[i2] = 1.0f;
+                }
+            }
+            stateList.AddRange(possibleMoveArray);
+
+            var state = stateList.ToArray().ToTensor([1, 301]);
+            var policy = _policyNetwork.Call(state);
+            var value = _valueNetwork.Call(state);
             PredictedPolicy = policy;
             NetworkValue = value[0].item<float>();
         }
@@ -130,7 +150,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 
         private void GenerateReachableStates() {
             while (reachableStates.Count != possibleMoves.Count) {
-                var newNode = new NeuralGameTreeNode(this, _gameState.Copy(), _network, filteredPolicyArray[reachableStates.Count], playerOfInterest);
+                var newNode = new NeuralGameTreeNode(this, _gameState.Copy(), _policyNetwork, _valueNetwork, filteredPolicyArray[reachableStates.Count], playerOfInterest);
                 var move = possibleMoves[reachableStates.Count];
 
                 newNode.MakeMove(move);
@@ -159,10 +179,10 @@ namespace AzulAIAndGameState.Players.MCTS_NN
                 CumulativeAttemptScore = Math.Sign(PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates));
                 EndsReached = 1;
 
-                var state = _gameState.GetListState().Flatten().Select(x => (float)x).ToArray().ToTensor([1, 121]);
-                var (policy, value) = _network.Call(state);
-                _parent?.Backpropagate(accumulatedLoss: 0.0f, (float)-CumulativeAttemptScore, -value.item<float>(), policy);
-                EvaluatePosition();
+                //var state = _gameState.GetListState().Flatten().Select(x => (float)x).ToArray().ToTensor([1, 121]);
+                //var (policy, value) = _network.Call(state);
+                //_parent?.Backpropagate(accumulatedLoss: 0.0f, (float)-CumulativeAttemptScore, -value.item<float>(), policy);
+                //EvaluatePosition();
                 return CumulativeAttemptScore;
             }
 

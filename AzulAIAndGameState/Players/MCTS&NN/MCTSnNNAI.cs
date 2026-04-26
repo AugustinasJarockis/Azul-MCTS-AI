@@ -1,4 +1,5 @@
-﻿using AzulBoardGame.Enums;
+﻿using AzulAIAndGameState.Players.MCTS_NN.Networks;
+using AzulBoardGame.Enums;
 using AzulBoardGame.GameState;
 using AzulBoardGame.Players.MCTS_CNN;
 using AzulBoardGame.Players.PlayerBase;
@@ -11,25 +12,27 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 {
     public class MCTSnNNAI : IPlayerAI
     {
-        private PolicyValueNetwork _model = new();
+        private PolicyNetwork _policyModel;
+        private ValueNetwork _valueModel;
         private NeuralGameTreeNode gameTree;
 
         private bool _trainingOn = false;
         Adam? optimizer = null;
         public int timeAllotedMs { get; set; } = 500; 
-        public MCTSnNNAI(string modelPath, int timeAllotedMs = 500, bool trainingOn = false) {
-            _model.load(modelPath);
+        public MCTSnNNAI(string policyModelPath, string valueModelPath, int timeAllotedMs = 500, bool trainingOn = false) {
+            _policyModel = new(policyModelPath);
+            _valueModel = new(valueModelPath);
             _trainingOn = trainingOn;
             this.timeAllotedMs = timeAllotedMs;
 
             if (_trainingOn) {
-                optimizer = torch.optim.Adam(_model.parameters(), lr: 0.001);
+                optimizer = torch.optim.Adam(_policyModel.parameters(), lr: 0.001);
             }
         }
 
         public (byte, TileType, byte) ChooseMove(GeneralGameState gameState) {
             if (gameTree == null) {
-                gameTree = new(gameState.Copy(), _model, gameState.CurrentPlayer);
+                gameTree = new(gameState.Copy(), _policyModel, _valueModel, gameState.CurrentPlayer);
             }
             else {
                 gameTree = gameTree.GetSyncWithManager(gameState.PlayerCount, gameState.Copy());
@@ -70,8 +73,9 @@ namespace AzulAIAndGameState.Players.MCTS_NN
             return gameTree.GetBestMove();
         }
 
-        public void SaveModel(string path) {
-            _model.save(path);
+        public void SaveModel(string policyPath, string valuePath) {
+            _policyModel.save(policyPath);
+            _valueModel.save(valuePath);
         }
     }
 }

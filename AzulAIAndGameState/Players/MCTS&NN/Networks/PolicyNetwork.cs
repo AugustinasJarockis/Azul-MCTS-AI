@@ -1,4 +1,5 @@
-﻿using TorchSharp.Modules;
+﻿using TorchSharp;
+using TorchSharp.Modules;
 using static TorchSharp.torch;
 using static TorchSharp.torch.nn;
 
@@ -7,6 +8,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
     public class PolicyNetwork : Module
     { 
         public Adam optimizer;
+        public Device device;
 
         private Layer fc1;
         private Layer fc2;
@@ -18,23 +20,36 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
         private Layer fc8;
         private Layer fc9;
         private Layer fc10;
+        private Layer fc11;
+        private Layer fc12;
+        private Layer fc13;
+        private Layer fc14;
 
         public PolicyNetwork(string modelPath = "") : base("PolicyOnlyNetwork") {
-            fc1 = new Layer(301, 256);
-            fc2 = new Layer(256, 256);
-            fc3 = new Layer(256, 256);
-            fc4 = new Layer(256, 256);
-            fc5 = new Layer(256, 256);
-            fc6 = new Layer(256, 256);
-            fc7 = new Layer(256, 256);
-            fc8 = new Layer(256, 256);
-            fc9 = new Layer(256, 256);
-            fc10 = new Layer(256, 180);
+            if (cuda.is_available())
+                device = CUDA;
+            else
+                device = CPU;
+            
+            fc1 = new Layer(301, 512);
+            fc2 = new Layer(512, 512);
+            fc3 = new Layer(512, 512);
+            fc4 = new Layer(512, 512);
+            fc5 = new Layer(512, 512);
+            fc6 = new Layer(512, 512);
+            fc7 = new Layer(512, 512);
+            fc8 = new Layer(512, 512);
+            fc9 = new Layer(512, 512);
+            fc11 = new Layer(512, 512);
+            fc12 = new Layer(512, 512);
+            fc13 = new Layer(512, 512);
+            fc14 = new Layer(512, 512);
+            fc10 = new Layer(512, 180);
 
             RegisterComponents();
 
             if (modelPath != "") {
-                load(modelPath);
+                load(modelPath).to(device);
             }
             optimizer = optim.Adam(parameters(), lr: 0.001);
         }
@@ -42,17 +57,22 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
         public Tensor Call(Tensor x) {
             var residual = fc1.Forward(x);
             
-            x = fc2.Forward(residual);
-            x = fc3.Forward(x, residual);
-            x = fc4.Forward(x, residual);
-            x = fc5.Forward(x, residual);
-            x = fc6.Forward(x, residual);
+            var x1 = fc2.ForwardWithRelu(residual);
+            var x2 = fc3.ForwardWithRelu(x1);
+            var x3 = fc4.ForwardWithRelu(x2);
+            var x4 = fc5.ForwardWithRelu(x3);
+            x = fc6.ForwardWithRelu(x4, residual);
 
-            x = fc6.ForwardWithRelu(x, residual);
-            x = fc7.ForwardWithRelu(x, residual);
-            x = fc8.ForwardWithRelu(x, residual);
-            x = fc9.ForwardWithRelu(x, residual);
-            
+            x = fc6.ForwardWithRelu(x, x4);
+            x = fc7.ForwardWithRelu(x, x3);
+            x = fc8.ForwardWithRelu(x, x2);
+            x = fc9.ForwardWithRelu(x, x1);
+
+            x = fc11.ForwardWithRelu(x, x4);
+            x = fc12.ForwardWithRelu(x, x3);
+            x = fc13.ForwardWithRelu(x, x2);
+            x = fc14.ForwardWithRelu(x, x1);
+
             x = fc10.Forward(x);
 
             return x;
@@ -60,18 +80,20 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
 
         public void TrainWithLoss(Tensor loss) {
             optimizer.zero_grad();
-            float lossValue = loss.mean().item<float>();
+            float lossValue = loss.item<float>();
             //Console.WriteLine("Backpropagating: " + lossValue);
-            loss.mean().backward();
+            loss.backward();
             optimizer.step();
         }
     }
 
-    internal class Layer {
+    internal class Layer : Module {
         private Linear fc;
 
-        public Layer(int input, int output) {
+        public Layer(int input, int output) : base("LinearWrapper") {
             fc = Linear(input, output);
+
+            RegisterComponents();
         }
 
         public Tensor Forward(Tensor x) {
@@ -83,7 +105,12 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
             x = x + residual;
             return x;
         }
-
+        public Tensor ForwardWithRelu(Tensor x)
+        {
+            x = fc.forward(x);
+            x = functional.relu(x);
+            return x;
+        }
         public Tensor ForwardWithRelu(Tensor x, Tensor residual) {
             x = fc.forward(x);
             x = x + residual;

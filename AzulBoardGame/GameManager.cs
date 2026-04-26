@@ -47,11 +47,11 @@ namespace AzulBoardGame
 
 
         //Create Player AIs
-        public IPlayerAI player1 = new RandomAI();
+        public IPlayerAI player1 = new HeuristicAI();
         //var player1 = new MCTSnNNAI("Models/nmodel31.nn", trainingOn: true);
         //public IPlayerAI player2 = new MCTSnNNAI("Models/hmodel48.nn", trainingOn: true);
-        public IPlayerAI player2 = new MCTSnNNAI("Models/legalmodel1.nn", trainingOn: true);
-
+        public IPlayerAI player2 = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel58.v0.nn", trainingOn: false);
+        //public IPlayerAI player2 = new PolicyNetworkAI("Models/fullmodel10.v3.nn");
 
         public GameManager(Canvas mainCanvas, ScaleTransform scaleTransform, TranslateTransform translateTransform) {
             _canvasControls = new (){
@@ -211,7 +211,7 @@ namespace AzulBoardGame
         private async Task RunMatch() {
             await PlayGame();
             var winningPlayer = players.First(p => p.Points == players.Max(p => p.Points));
-            ((MCTSnNNAI)players[1].PlayerAI).SaveModel("Models/RL2.nn");
+            //((MCTSnNNAI)players[1].PlayerAI).SaveModel("Models/RL2.nn");
 
             victoryPopup.Show(winningPlayer.Name, winningPlayer.Points);
             gameStarted = false;
