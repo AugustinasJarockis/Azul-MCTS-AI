@@ -40,33 +40,20 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
         }
 
         public Tensor Call(Tensor x) {
-            //x = fc0.forward(x);
-            //x = functional.relu(x);
+            var residual = fc1.Forward(x);
+            
+            x = fc2.Forward(residual);
+            x = fc3.Forward(x, residual);
+            x = fc4.Forward(x, residual);
+            x = fc5.Forward(x, residual);
+            x = fc6.Forward(x, residual);
 
-            //var residual = x;
-            //x = fc1.forward(x);
-            //x = x + residual;
-            //x = functional.relu(x);
-
-            //var residual2 = x;
-            //x = fc2.forward(x);
-            //x = functional.relu(x);
-
-            //var residual3 = x;
-            //x = fc3.forward(x);
-            //x = functional.relu(x);
-
-            //x = fc4.forward(x);
-            //x = x + residual3;
-            //x = functional.relu(x);
-
-            //x = fc5.forward(x);
-            //x = x + residual2;
-            //x = functional.relu(x);
-
-            //x = fc6.forward(x);
-            //x = x + residual;
-            //x = functional.relu(x);
+            x = fc6.ForwardWithRelu(x, residual);
+            x = fc7.ForwardWithRelu(x, residual);
+            x = fc8.ForwardWithRelu(x, residual);
+            x = fc9.ForwardWithRelu(x, residual);
+            
+            x = fc10.Forward(x);
 
             return x;
         }
