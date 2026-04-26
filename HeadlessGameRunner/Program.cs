@@ -18,22 +18,26 @@ using AzulBoardGame.Players.PlayerBase;
 //PlayGame();
 
 //GenerateMoves("GoodMoveDatabase.csv", 10000);
-var thread1 = new Thread(() => new GameSetup().GenerateMoves("GoodMoveDatabase1.csv", 2500));
-var thread2 = new Thread(() => new GameSetup().GenerateMoves("GoodMoveDatabase2.csv", 2500));
-var thread3 = new Thread(() => new GameSetup().GenerateMoves("GoodMoveDatabase3.csv", 2500));
-var thread4 = new Thread(() => new GameSetup().GenerateMoves("GoodMoveDatabase4.csv", 2500));
+//var thread1 = new Thread(() => new GameSetup().GenerateMoves("GoodMoveDatabase1.csv", 2500));
+//var thread2 = new Thread(() => new GameSetup().GenerateMoves("GoodMoveDatabase2.csv", 2500));
+//var thread3 = new Thread(() => new GameSetup().GenerateMoves("GoodMoveDatabase3.csv", 2500));
+//var thread4 = new Thread(() => new GameSetup().GenerateMoves("GoodMoveDatabase4.csv", 2500));
 
-thread1.Start();
-thread2.Start();
-thread3.Start();
-thread4.Start();
+//thread1.Start();
+//thread2.Start();
+//thread3.Start();
+//thread4.Start();
 
-thread1.Join();
-thread2.Join();
-thread3.Join();
-thread4.Join();
+//thread1.Join();
+//thread2.Join();
+//thread3.Join();
+//thread4.Join();
 
-Console.WriteLine("All threads finished");
+//Parallel.For(0, 100, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
+//    i => new GameSetup().GenerateMoves("GoodMoveDatabase" + i + ".csv", 100));
+
+//Console.WriteLine("All threads finished");
+
 //var trainer = new NetworkTrainer("SmallerMoveDatabase.csv", "TrainingDataOnLegal.csv");
 //var model = new PolicyValueNetwork("Models/hmodel48.nn");
 //trainer.TrainLegalAndNoProcessing(model, 50);
@@ -41,6 +45,16 @@ Console.WriteLine("All threads finished");
 
 //Test(20, "RLLearning2.csv");
 //((MCTSnNNAI)players[0].PlayerAI).SaveModel("Models/RL4.nn");
+
+MergeFiles();
+void MergeFiles()
+{
+    for (int i = 0; i < 100; i++)
+    {
+        string contents = File.ReadAllText("GoodMoveDatabase" + i + ".csv");
+        File.AppendAllText("GoodMoveDatabaseFull.csv", contents);
+    }
+}
 
 public class GameSetup
 {
