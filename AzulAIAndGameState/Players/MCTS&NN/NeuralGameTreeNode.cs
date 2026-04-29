@@ -77,7 +77,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
         private void Backpropagate(torch.Tensor accumulatedLoss, float advantage, float futureValue, torch.Tensor FuturePredictedPolicy) {
             var state = _gameState.GetListState().Flatten().Select(x => (float)x).ToArray().ToTensor([1, 121]);
             var policy = _policyNetwork.Call(state);
-            var value = _valueNetwork.Call(state);
+            var value = 2 * _valueNetwork.Call(state) - 1;
             int processingLinePunish = _gameState.PlayerBoardStates[_gameState.CurrentPlayer].MoveMade?.Item3 == 5 ? -100 : 0;
             float newAdvantage = 0 + yFade * value.item<float>() - NetworkValue + lFade * yFade * advantage;
             //accumulatedLoss += (FuturePredictedPolicy / policy) * newAdvantage;
@@ -96,7 +96,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
             CumulativeAttemptScore += NetworkValue;
         }
 
-        public (byte, TileType, byte) GetBestMove() => possibleMoves[reachableStates.IndexOf(reachableStates.MaxBy(s => s.EndsReached))];
+        public (byte, TileType, byte) GetBestMove() => possibleMoves[reachableStates.IndexOf(reachableStates.MaxBy(s => s.EndsReached + 0.1 * s.NetworkValue))];
 
         public torch.Tensor GetUpdatedPolicyTensor() {
             var possibleMoveTensor = reachableStates.Select(s => s.CalculatedValue).ToArray().ToTensor([reachableStates.Count]).softmax(1);
@@ -124,7 +124,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 
             var state = stateList.ToArray().ToTensor([1, 301]);
             var policy = _policyNetwork.Call(state);
-            var value = _valueNetwork.Call(state);
+            var value = 2 * _valueNetwork.Call(state) - 1;
             PredictedPolicy = policy;
             NetworkValue = value[0].item<float>();
         }
@@ -141,7 +141,8 @@ namespace AzulAIAndGameState.Players.MCTS_NN
                 }
             }
 
-            filteredPolicyArray = filteredPolicy.ToArray().ToTensor([filteredPolicy.Count]).softmax(0).data<float>().ToArray();
+            //filteredPolicyArray = filteredPolicy.ToArray().ToTensor([filteredPolicy.Count]).softmax(0).data<float>().ToArray(); //Skip softmax??
+            filteredPolicyArray = filteredPolicy.ToArray();
             var possibleMovesArray = possibleMoves.ToArray();
             Array.Sort(filteredPolicyArray, possibleMovesArray, Comparer<float>.Create((a, b) => b.CompareTo(a)));
             possibleMoves = possibleMovesArray.ToList();
@@ -183,21 +184,21 @@ namespace AzulAIAndGameState.Players.MCTS_NN
                 //var (policy, value) = _network.Call(state);
                 //_parent?.Backpropagate(accumulatedLoss: 0.0f, (float)-CumulativeAttemptScore, -value.item<float>(), policy);
                 //EvaluatePosition();
-                return CumulativeAttemptScore;
+                return -CumulativeAttemptScore;
             }
 
             if (reachableStates.Count != possibleMoves.Count) {
                 GenerateReachableStates();
-                return NetworkValue;
+                return -NetworkValue;
             }
 
             double attemptValue = (double)reachableStates.MaxBy(
-                s => (s.CumulativeAttemptScore / s.EndsReached) + 2 * (s.ProbabilityToReach * (Math.Sqrt(EndsReached) / (1 + s.EndsReached)))
+                s => (-s.CumulativeAttemptScore / s.EndsReached) + 2 * (s.ProbabilityToReach * (Math.Sqrt(EndsReached) / (1 + s.EndsReached)))
                 )?.PlayOut()!;
             
             EndsReached++;
             CumulativeAttemptScore += attemptValue;
-            return attemptValue;
+            return -attemptValue;
         }
         public static double PointDifference(int playerOfInterest, List<PlayerBoardState> players) {
             var orderedPlayers = players.OrderBy(p => p.Points);

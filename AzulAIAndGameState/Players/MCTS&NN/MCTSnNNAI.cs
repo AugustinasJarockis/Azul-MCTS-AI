@@ -31,6 +31,8 @@ namespace AzulAIAndGameState.Players.MCTS_NN
         }
 
         public (byte, TileType, byte) ChooseMove(GeneralGameState gameState) {
+            try
+            {
             if (gameTree == null) {
                 gameTree = new(gameState.Copy(), _policyModel, _valueModel, gameState.CurrentPlayer);
             }
@@ -38,11 +40,17 @@ namespace AzulAIAndGameState.Players.MCTS_NN
                 gameTree = gameTree.GetSyncWithManager(gameState.PlayerCount, gameState.Copy());
             }
 
+
             var timer = Stopwatch.StartNew();
             while (timer.ElapsedMilliseconds < timeAllotedMs) {
                 gameTree.PlayOut();
             }
             timer.Stop();
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine("Bad");
+            }
 
             if (false && _trainingOn) {
                 var predictedPolicy = gameTree.PredictedPolicy.flatten();
