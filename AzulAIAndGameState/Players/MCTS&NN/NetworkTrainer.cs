@@ -76,6 +76,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
         public void TrainValue(ValueNetwork model, int epochCount, int batchSize = 32)
         {
             Console.WriteLine("Value training started");
+            File.AppendAllText(_trainingProcessData, "Value training started\n");
             float minTestLoss = float.MaxValue;
 
             for (int epoch = 0; epoch < epochCount; epoch++)
@@ -89,7 +90,8 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
 
                     var value = model.Call(statesTensor);
 
-                    var valueLoss = functional.binary_cross_entropy_with_logits(value.flatten(), correctValues);
+                    //var valueLoss = functional.binary_cross_entropy_with_logits(value.flatten(), correctValues);
+                    var valueLoss = functional.smooth_l1_loss(value.flatten(), correctValues, beta: 0.5);
 
                     model.TrainWithLoss(valueLoss);
 
@@ -104,7 +106,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
 
                     var value = model.Call(statesTensor);
 
-                    var valueLoss = functional.binary_cross_entropy_with_logits(value.flatten(), correctValues);
+                    var valueLoss = functional.smooth_l1_loss(value.flatten(), correctValues, beta: 0.5);
 
                     testLoss += valueLoss.item<float>() * batchSize;
                 }
@@ -118,7 +120,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                 {
                     minTestLoss = testLoss;
                     Console.WriteLine("Saving model on epoch nr." + epoch);
-                    model.save("Models/valuemodel" + epoch + ".v0.nn");
+                    model.save("Models/valuemodel" + epoch + ".v1.nn");
                 }
 
                 trainDatasetLoader.Shuffle();

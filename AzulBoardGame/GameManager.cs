@@ -51,7 +51,7 @@ namespace AzulBoardGame
         //var player1 = new MCTSnNNAI("Models/nmodel31.nn", trainingOn: true);
         //public IPlayerAI player2 = new MCTSnNNAI("Models/hmodel48.nn", trainingOn: true);
         //public IPlayerAI player1 = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel58.v0.nn", trainingOn: false, timeAllotedMs: 10000);
-        public IPlayerAI player2 = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel58.v0.nn", trainingOn: false);
+        public IPlayerAI player2 = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel21.v1.nn", trainingOn: false);
         //public IPlayerAI player2 = new PolicyNetworkAI("Models/fullmodel10.v3.nn");
         public GameManager(Canvas mainCanvas, ScaleTransform scaleTransform, TranslateTransform translateTransform) {
             _canvasControls = new (){

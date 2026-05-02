@@ -98,7 +98,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
         //    CumulativeAttemptScore += NetworkValue;
         //}
 
-        public (byte, TileType, byte) GetBestMove() => possibleMoves[reachableStates.IndexOf(reachableStates.MaxBy(s => s.EndsReached + 0.1 * s.NetworkValue))];
+        public (byte, TileType, byte) GetBestMove() => possibleMoves[reachableStates.IndexOf(reachableStates.MaxBy(s => s.EndsReached - 0.1 * s.NetworkValue))];
 
         public torch.Tensor GetUpdatedPolicyTensor() {
             var possibleMoveTensor = reachableStates.Select(s => s.CalculatedValue).ToArray().ToTensor([reachableStates.Count]).softmax(1);
@@ -205,7 +205,8 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 
             var states = torch.stack(evaluatableStates);
             var policies = _policyNetwork.Call(states);
-            var values = torch.zeros([reachableStates.Count, 1]).data<float>().ToArray();//_valueNetwork.Call(states);
+            var values = _valueNetwork.Call(states).data<float>().ToArray();
+            //var values = torch.zeros([reachableStates.Count, 1]).data<float>().ToArray();//_valueNetwork.Call(states);
             //var values = reachableStates.Select(s => (float)PointDifference(s._gameState.CurrentPlayer, s._gameState.PlayerBoardStates)).ToArray();
             //PredictedPolicy = policies; //TODO: this is bad
             //NetworkValue = values[0].item<float>(); //TODO: this is bad
@@ -265,7 +266,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
             try {
 
             (attemptValue, newEndsReached) = ((double, int))reachableStates.MaxBy(
-                s => (-s.CumulativeAttemptScore / s.EndsReached) + 2 * (s.ProbabilityToReach * (Math.Sqrt(EndsReached) / (1 + s.EndsReached)))
+                s => (-s.CumulativeAttemptScore / s.EndsReached) + 200 * (s.ProbabilityToReach * (Math.Sqrt(EndsReached) / (1 + s.EndsReached)))
                 )?.PlayOut()!;
             } catch (Exception e) {
                 Console.WriteLine(e.ToString());

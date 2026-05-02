@@ -77,6 +77,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
             x = fc14.ForwardWithRelu(x, x1);
 
             x = fc10.Forward(x);
+            x = x.tanh();
 
             return x;
         }

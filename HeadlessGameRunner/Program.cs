@@ -5,6 +5,7 @@ using AzulAIAndGameState.Players.MCTS_NN.Networks;
 using AzulBoardGame.Enums;
 using AzulBoardGame.Extensions;
 using AzulBoardGame.GameState;
+using AzulBoardGame.Players;
 using AzulBoardGame.Players.MCTS;
 using AzulBoardGame.Players.MCTS.MCTSVariants;
 using AzulBoardGame.Players.MCTS_CNN;
@@ -21,15 +22,15 @@ using AzulBoardGame.Players.PlayerBase;
 
 //Console.WriteLine("All threads finished");
 
-var trainer = new NetworkTrainer("GoodMoveDatabaseFull.csv", "TrainingDataOnValue.csv");
+//var trainer = new NetworkTrainer("GoodMoveDatabaseFull.csv", "TrainingDataOnValue.v1.csv");
 //var model = new PolicyValueNetwork("Models/hmodel48.nn");
 //var model = new PolicyNetwork();
-var model = new ValueNetwork();
+//var model = new ValueNetwork();
 //trainer.TrainLegalAndNoProcessing(model, 50);
 //trainer.Train(model, 100, 512);
-trainer.TrainValue(model, 100, 512);
+//trainer.TrainValue(model, 100, 512);
 
-//Test(20, "RLLearning2.csv");
+new GameSetup().Test(100, "MCTSNNAIvsHeuristic.csv");
 //((MCTSnNNAI)players[0].PlayerAI).SaveModel("Models/RL4.nn");
 
 //MergeFiles();
@@ -45,8 +46,8 @@ trainer.TrainValue(model, 100, 512);
 public class GameSetup
 {
     //public MCTSnNNAI Player1AI = new ("Models/hmodel48.nn", trainingOn: true);
-    public MCTSAIScoreDiffAvg Player1AI;
-    public MCTSAIScoreDiffAvg Player2AI;
+    public IPlayerAI Player1AI;
+    public IPlayerAI Player2AI;
 
     public GeneralGameState gameState = new (2);
 
@@ -56,9 +57,10 @@ public class GameSetup
     public List<HeadlessPlayer> players;
 
     public GameSetup() {
-        Player1AI = new();
-        Player2AI = new();
-        gameState = new(2);
+        //Player1AI = new();
+        //Player2AI = new();
+        Player1AI = new HeuristicAI();
+        Player2AI = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel21.v1.nn", trainingOn: false);
         Player1 = new(gameState.PlayerBoardStates[0], Player1AI);
         Player2 = new(gameState.PlayerBoardStates[1], Player2AI);
     
@@ -164,7 +166,7 @@ public class GameSetup
         Test(100, "HeuristicTime1s.csv", 1000);
     }
 
-    void Test(int count, string filename, int player1TimeMs = -1) {
+    public void Test(int count, string filename, int player1TimeMs = -1) {
         for (int i = 0; i < count; i++) {
             int startingPlayer = i / ((count + players.Count - 1) / players.Count);
             gameState.NextRoundStartingPlayer = startingPlayer;
