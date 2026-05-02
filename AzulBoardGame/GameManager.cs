@@ -51,7 +51,8 @@ namespace AzulBoardGame
         //var player1 = new MCTSnNNAI("Models/nmodel31.nn", trainingOn: true);
         //public IPlayerAI player2 = new MCTSnNNAI("Models/hmodel48.nn", trainingOn: true);
         //public IPlayerAI player1 = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel58.v0.nn", trainingOn: false, timeAllotedMs: 10000);
-        public IPlayerAI player2 = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel21.v1.nn", trainingOn: false);
+        //public IPlayerAI player2 = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel21.v1.nn", trainingOn: false);
+        public IPlayerAI player2 = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/RLValue.nn", trainingOn: false);
         //public IPlayerAI player2 = new PolicyNetworkAI("Models/fullmodel10.v3.nn");
         public GameManager(Canvas mainCanvas, ScaleTransform scaleTransform, TranslateTransform translateTransform) {
             _canvasControls = new (){
@@ -68,6 +69,7 @@ namespace AzulBoardGame
                 }
             };
 
+            //Test(1000, "FirstValueRLAttempt.csv");
             if (runTests) {
                 Test(100, "PolicyVsRandom.csv");
                 //RunTests();
@@ -188,6 +190,7 @@ namespace AzulBoardGame
                 await Task.Delay(2000);
                 await PlayGame();
                 WriteResults(filename, startingPlayer);
+                ((MCTSnNNAI)players[1].PlayerAI).SaveModel("Models/RLPolicyNoChange.nn", "Models/RLValue2.nn");
                 ResetGame();
             }
         }
@@ -211,7 +214,7 @@ namespace AzulBoardGame
         private async Task RunMatch() {
             await PlayGame();
             var winningPlayer = players.First(p => p.Points == players.Max(p => p.Points));
-            //((MCTSnNNAI)players[1].PlayerAI).SaveModel("Models/RL2.nn");
+            //((MCTSnNNAI)players[1].PlayerAI).SaveModel("Models/RLPolicyNoChange.nn", "Models/RLValue2.nn");
 
             victoryPopup.Show(winningPlayer.Name, winningPlayer.Points);
             gameStarted = false;

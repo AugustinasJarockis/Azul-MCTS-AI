@@ -23,6 +23,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
         private float[] filteredPolicyArray = [];
         public torch.Tensor PredictedPolicy { get; private set; }
         private float[] filteredPredictedPolicy;
+        public torch.Tensor ValuePrediction { get; private set; }
         public float NetworkValue { get; private set; } = 0;
 
         private PolicyNetwork _policyNetwork;
@@ -118,8 +119,9 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 
             var state = stateList.ToArray().ToTensor([1, 301]);
             var policy = _policyNetwork.Call(state).flatten();
-            var value = 2 * _valueNetwork.Call(state) - 1;
+            var value = _valueNetwork.Call(state);
             PredictedPolicy = policy;
+            ValuePrediction = value[0];
             NetworkValue = value[0].item<float>();
         }
 
@@ -205,7 +207,8 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 
             var states = torch.stack(evaluatableStates);
             var policies = _policyNetwork.Call(states);
-            var values = _valueNetwork.Call(states).data<float>().ToArray();
+            var valuesPredition = _valueNetwork.Call(states);
+            var values = valuesPredition.data<float>().ToArray();
             //var values = torch.zeros([reachableStates.Count, 1]).data<float>().ToArray();//_valueNetwork.Call(states);
             //var values = reachableStates.Select(s => (float)PointDifference(s._gameState.CurrentPlayer, s._gameState.PlayerBoardStates)).ToArray();
             //PredictedPolicy = policies; //TODO: this is bad
@@ -221,6 +224,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
                 reachableStates[i].PredictedPolicy = policies[i].flatten();
                 reachableStates[i].GenerateFilteredPolicyArray();
                 //reachableStates[i].NetworkValue = values[i].item<float>();
+                reachableStates[i].ValuePrediction = valuesPredition[i];
                 reachableStates[i].NetworkValue = values[i];
                 reachableStates[i].CumulativeAttemptScore = reachableStates[i].NetworkValue;
                 reachableStates[i].EndsReached = 1;
@@ -246,14 +250,15 @@ namespace AzulAIAndGameState.Players.MCTS_NN
                 foreach (var player in _gameState.PlayerBoardStates)
                     player.CalculateAdditionalPoints();
 
-                CumulativeAttemptScore += Math.Sign(PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates));
+                double score = Math.Sign(PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates));
+                CumulativeAttemptScore += score;
                 EndsReached++;
 
                 //var state = _gameState.GetListState().Flatten().Select(x => (float)x).ToArray().ToTensor([1, 121]);
                 //var (policy, value) = _network.Call(state);
                 //_parent?.Backpropagate(accumulatedLoss: 0.0f, (float)-CumulativeAttemptScore, -value.item<float>(), policy);
                 //EvaluatePosition();
-                return (-CumulativeAttemptScore, 1);
+                return (-score, 1);
             }
 
             if (reachableStates.Count != possibleMoves.Count) {
@@ -266,7 +271,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
             try {
 
             (attemptValue, newEndsReached) = ((double, int))reachableStates.MaxBy(
-                s => (-s.CumulativeAttemptScore / s.EndsReached) + 200 * (s.ProbabilityToReach * (Math.Sqrt(EndsReached) / (1 + s.EndsReached)))
+                s => (-s.CumulativeAttemptScore / s.EndsReached) + 2 * (s.ProbabilityToReach * (Math.Sqrt(EndsReached) / (1 + s.EndsReached)))
                 )?.PlayOut()!;
             } catch (Exception e) {
                 Console.WriteLine(e.ToString());

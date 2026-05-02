@@ -55,21 +55,34 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 
                 var policyLoss = functional.cross_entropy(predictedPolicy, correctPolicy.flatten());
                 var processingLinePredictionsLoss = functional.cross_entropy(processingLinePredictions, processingLineCorrect);
-                var valueLoss = functional.mse_loss(gameTree.NetworkValue, gameTree.CalculatedValue);
-                torch.Tensor loss = policyLoss + processingLinePredictionsLoss * 1000 + valueLoss;
+                //var valueLoss = functional.mse_loss(gameTree.NetworkValue, gameTree.CalculatedValue);
+                //torch.Tensor loss = policyLoss + processingLinePredictionsLoss * 1000 + valueLoss;
 
                 optimizer?.zero_grad();
-                loss.backward();
+                //loss.backward();
                 optimizer?.step();
 
                 double lossFloat = 0;
-                lossFloat += (double)loss.item<double>() * 1;
+                //lossFloat += (double)loss.item<double>() * 1;
                 double processingLineLossFloat = 0;
                 processingLineLossFloat += (double)processingLinePredictionsLoss.item<float>() * 1.0;
                 Console.WriteLine("Loss: " + lossFloat + " Processing loss: " + processingLineLossFloat);
             }
 
-            Console.WriteLine("Nodes visited: " + gameTree.EndsReached);
+            var valueLoss = functional.smooth_l1_loss(gameTree.ValuePrediction, gameTree.CalculatedValue, beta: 0.75);
+            optimizer?.zero_grad();
+            valueLoss.backward();
+            optimizer?.step();
+
+            try {
+
+            double lossValue = valueLoss.item<double>();
+            Console.WriteLine("Nodes visited: " + gameTree.EndsReached + " | Loss: " + lossValue);
+            File.AppendAllText("LossValueAttempt1.txt", lossValue + "\n");
+            }
+            catch (Exception e){
+                Console.WriteLine(e.ToString());
+            }
             return gameTree.GetBestMove();
         }
 
