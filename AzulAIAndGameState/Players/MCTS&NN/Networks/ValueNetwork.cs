@@ -85,7 +85,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
         public void TrainWithLoss(Tensor loss)
         {
             optimizer.zero_grad();
-            float lossValue = loss.item<float>();
+            //float lossValue = loss.item<float>();
             //Console.WriteLine("Backpropagating: " + lossValue);
             loss.backward();
             optimizer.step();

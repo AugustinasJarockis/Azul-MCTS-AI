@@ -1,5 +1,6 @@
 ﻿using AzulAIAndGameState.Players.MCTS_CNN;
 using AzulAIAndGameState.Players.MCTS_NN;
+using AzulAIAndGameState.Players.MiniMax;
 using AzulBoardGame.Enums;
 using AzulBoardGame.Extensions;
 using AzulBoardGame.GameState;
@@ -48,14 +49,17 @@ namespace AzulBoardGame
 
         //Create Player AIs
         //public IPlayerAI player1 = new HeuristicAI();
+        //public IPlayerAI player1 = new MCTSnPolicy("Models/fullmodel10.v3.nn", trainingOn: false);
         public IPlayerAI player1 = new MCTSAIScoreDiffAvg();
         //var player1 = new MCTSnNNAI("Models/nmodel31.nn", trainingOn: true);
         //public IPlayerAI player2 = new MCTSnNNAI("Models/hmodel48.nn", trainingOn: true);
         //public IPlayerAI player1 = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel58.v0.nn", trainingOn: false, timeAllotedMs: 10000);
         //public IPlayerAI player2 = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel21.v1.nn", trainingOn: false);
-        public IPlayerAI player2 = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/RLValue.nn", trainingOn: false);
+        //public IPlayerAI player2 = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel21.v1.nn", trainingOn: false);
+        //public IPlayerAI player2 = new MCTSnCustomEval("Models/fullmodel10.v3.nn", trainingOn: false);
         //public IPlayerAI player2 = new MCTSnPolicy("Models/fullmodel10.v3.nn", trainingOn: false);
         //public IPlayerAI player2 = new PolicyNetworkAI("Models/fullmodel10.v3.nn");
+        public IPlayerAI player2 = new MinimaxAI();
         public GameManager(Canvas mainCanvas, ScaleTransform scaleTransform, TranslateTransform translateTransform) {
             _canvasControls = new (){
                 Canvas = mainCanvas,
@@ -63,6 +67,7 @@ namespace AzulBoardGame
                 TranslateTransform = translateTransform
             };
 
+            try {
             CreateGameBoardObjects();
 
             _canvasControls.Canvas.KeyDown += (s, e) => {
@@ -71,10 +76,15 @@ namespace AzulBoardGame
                 }
             };
 
-            Test(100, "TwoMCTSComp.csv");
+            //Test(100, "PossiblyWorkingRL2.csv");
             if (runTests) {
                 Test(100, "PolicyVsRandom.csv");
                 //RunTests();
+            }
+
+            }
+            catch (Exception ex) {
+                Console.WriteLine(ex.ToString());
             }
         }
 
@@ -239,8 +249,14 @@ namespace AzulBoardGame
 
                 await WaitToContinue();
 
+                try {
+
                 foreach (Player player in players)
                     player.CompleteRound();
+                }
+                catch(Exception ex) {
+                    Console.WriteLine(ex.ToString());
+                }
             }
 
             foreach (Player player in players)

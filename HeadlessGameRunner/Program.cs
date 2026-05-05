@@ -2,6 +2,7 @@
 using AzulAIAndGameState.Players.MCTS_CNN;
 using AzulAIAndGameState.Players.MCTS_NN;
 using AzulAIAndGameState.Players.MCTS_NN.Networks;
+using AzulAIAndGameState.Players.MiniMax;
 using AzulBoardGame.Enums;
 using AzulBoardGame.Extensions;
 using AzulBoardGame.GameState;
@@ -30,7 +31,7 @@ using AzulBoardGame.Players.PlayerBase;
 //trainer.Train(model, 100, 512);
 //trainer.TrainValue(model, 100, 512);
 
-new GameSetup().Test(100, "MCTSNNAIvsHeuristic.csv");
+new GameSetup().Test(100, "MiniMaxVsMCTS.csv");
 //((MCTSnNNAI)players[0].PlayerAI).SaveModel("Models/RL4.nn");
 
 //MergeFiles();
@@ -59,8 +60,11 @@ public class GameSetup
     public GameSetup() {
         //Player1AI = new();
         //Player2AI = new();
-        Player1AI = new HeuristicAI();
-        Player2AI = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel21.v1.nn", trainingOn: false);
+        //Player1AI = new HeuristicAI();
+        Player1AI = new MCTSAIScoreDiffAvg();
+        //Player2AI = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel21.v1.nn", trainingOn: false);
+        //Player2AI = new MCTSnCustomEval("Models/fullmodel10.v3.nn", trainingOn: false);
+        Player2AI = new MinimaxAI();
         Player1 = new(gameState.PlayerBoardStates[0], Player1AI);
         Player2 = new(gameState.PlayerBoardStates[1], Player2AI);
     
@@ -168,6 +172,7 @@ public class GameSetup
 
     public void Test(int count, string filename, int player1TimeMs = -1) {
         for (int i = 0; i < count; i++) {
+            Console.WriteLine("Playing game nr. " + i);
             int startingPlayer = i / ((count + players.Count - 1) / players.Count);
             gameState.NextRoundStartingPlayer = startingPlayer;
             gameState.CurrentPlayer = startingPlayer;

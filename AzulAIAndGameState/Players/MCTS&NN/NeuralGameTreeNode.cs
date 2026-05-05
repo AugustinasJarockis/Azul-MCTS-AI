@@ -99,6 +99,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
         //    CumulativeAttemptScore += NetworkValue;
         //}
 
+        //public (byte, TileType, byte) GetBestMove() => possibleMoves[reachableStates.IndexOf(reachableStates.MaxBy(s => s.CalculatedValue))];
         public (byte, TileType, byte) GetBestMove() => possibleMoves[reachableStates.IndexOf(reachableStates.MaxBy(s => s.EndsReached - 0.1 * s.NetworkValue))];
 
         public torch.Tensor GetUpdatedPolicyTensor() {
@@ -147,6 +148,23 @@ namespace AzulAIAndGameState.Players.MCTS_NN
                     possibleMoveArray[i] = 1.0f;
                 }
             }
+        }
+
+        public float[] GetMCTSUpdatedPolicy() {
+
+            var policyTarget = new float[180];
+
+                for (int i = 0; i < reachableStates.Count; i++) {
+            try {
+                    int moveMade = MoveConverter.MoveTupleToInt(possibleMoves[i]);
+                    policyTarget[moveMade] = (float)reachableStates[i].EndsReached / (float)EndsReached;
+            }
+            catch (Exception ex) {
+                Console.WriteLine(ex.Message);
+            }
+                }
+
+            return policyTarget;
         }
 
         private float[] GeneratePossibleMoveMatrix() {

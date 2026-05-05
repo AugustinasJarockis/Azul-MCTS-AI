@@ -1,5 +1,6 @@
 ﻿using AzulBoardGame.Enums;
 using AzulBoardGame.PlayerBoard.PlayerTileGrid;
+using System.ComponentModel.DataAnnotations;
 
 namespace AzulBoardGame.GameState
 {
@@ -99,16 +100,17 @@ namespace AzulBoardGame.GameState
             return moves;
         }
 
-        public int GetAdditionalPoints() {
+        public int GetAdditionalPoints() => GetAdditionalPoints(tileGrid);
+        public int GetAdditionalPoints(TileGridState tileGridState) {
             int totalPointChange = 0;
             for (int i = 0; i < 5; i++) {
-                if (tileGrid.RowIsFull(i))
+                if (tileGridState.RowIsFull(i))
                     totalPointChange += 2;
 
-                if (tileGrid.CollumnIsFull(i))
+                if (tileGridState.CollumnIsFull(i))
                     totalPointChange += 7;
 
-                if (tileGrid.TypeIsComplete((TileType)(i + 1)))
+                if (tileGridState.TypeIsComplete((TileType)(i + 1)))
                     totalPointChange += 10;
             }
             return totalPointChange;
@@ -125,6 +127,19 @@ namespace AzulBoardGame.GameState
                     return true;
 
             return false;
+        }
+
+        public int EstimateEarnedPoints() {
+            var gridCopy = tileGrid.Copy();
+            int pointsGained = -GetAdditionalPoints();
+            for (int i = 0; i < 5; i++) {
+                if (tileRows[i].IsFull) {
+                    pointsGained += gridCopy.AddTile(i, (TileType)tileRows[i].RowTileType!);
+                }
+            }
+            pointsGained -= processingLine.GetPointLoss();
+            pointsGained += GetAdditionalPoints(gridCopy);
+            return pointsGained;
         }
 
         public void CompleteRound(ITileBank tileBank) {

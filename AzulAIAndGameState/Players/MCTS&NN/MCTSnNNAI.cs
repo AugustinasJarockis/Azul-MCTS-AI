@@ -53,7 +53,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
                 torch.Tensor processingLinePredictions = predictedPolicy.index_select(0, predictedIndices);
                 torch.Tensor processingLineCorrect = correctPolicy[0].select(2, 5).flatten();
 
-                var policyLoss = functional.cross_entropy(predictedPolicy, correctPolicy.flatten());
+                //var policyLoss = functional.cross_entropy(predictedPolicy, correctPolicy.flatten());
                 var processingLinePredictionsLoss = functional.cross_entropy(processingLinePredictions, processingLineCorrect);
                 //var valueLoss = functional.mse_loss(gameTree.NetworkValue, gameTree.CalculatedValue);
                 //torch.Tensor loss = policyLoss + processingLinePredictionsLoss * 1000 + valueLoss;
@@ -69,14 +69,20 @@ namespace AzulAIAndGameState.Players.MCTS_NN
                 Console.WriteLine("Loss: " + lossFloat + " Processing loss: " + processingLineLossFloat);
             }
 
-            var valueLoss = functional.smooth_l1_loss(gameTree.ValuePrediction, gameTree.CalculatedValue, beta: 0.75);
-            optimizer?.zero_grad();
-            valueLoss.backward();
-            optimizer?.step();
-
             try {
+                var targetPolicy = gameTree.GetMCTSUpdatedPolicy();
+                var predictedPolicyLog = functional.log_softmax(gameTree.PredictedPolicy, 0);
+                var policyLoss = -(targetPolicy * predictedPolicyLog).sum(0).mean();
+                _policyModel.TrainWithLoss(policyLoss);
 
-            double lossValue = valueLoss.item<double>();
+                var valueLoss = functional.mse_loss(gameTree.ValuePrediction, (float)gameTree.CalculatedValue);
+            _valueModel.TrainWithLoss(valueLoss);
+            //optimizer?.zero_grad();
+            //valueLoss.backward();
+            //optimizer?.step();
+
+
+            double lossValue = (double)valueLoss.item<float>();
             Console.WriteLine("Nodes visited: " + gameTree.EndsReached + " | Loss: " + lossValue);
             File.AppendAllText("LossValueAttempt1.txt", lossValue + "\n");
             }
