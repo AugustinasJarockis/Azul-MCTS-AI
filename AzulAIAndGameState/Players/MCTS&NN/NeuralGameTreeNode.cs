@@ -26,8 +26,8 @@ namespace AzulAIAndGameState.Players.MCTS_NN
         public torch.Tensor ValuePrediction { get; private set; }
         public float NetworkValue { get; private set; } = 0;
 
-        private PolicyNetwork _policyNetwork;
-        private ValueNetwork _valueNetwork;
+        private INetwork _policyNetwork;
+        private INetwork _valueNetwork;
 
         public float ProbabilityToReach { get; private set; } = 0;
         public int EndsReached { get; set; } = 0;
@@ -38,7 +38,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 
         private int playerOfInterest = 0; //TODO: sutvarkyti su šituo // Nenaudojamas realiai
 
-        public NeuralGameTreeNode(GeneralGameState gameState, PolicyNetwork policyNetwork, ValueNetwork valueNetwork, int playerOfInterest) {
+        public NeuralGameTreeNode(GeneralGameState gameState, INetwork policyNetwork, INetwork valueNetwork, int playerOfInterest) {
             _gameState = gameState;
             _policyNetwork = policyNetwork;
             _valueNetwork = valueNetwork;
@@ -47,7 +47,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
             GeneratePossibleMovesAndEval();
         }
 
-        public NeuralGameTreeNode(NeuralGameTreeNode parent, GeneralGameState gameState, PolicyNetwork policyNetwork, ValueNetwork valueNetwork, float probabilityToReach, int playerOfInterest) {
+        public NeuralGameTreeNode(NeuralGameTreeNode parent, GeneralGameState gameState, INetwork policyNetwork, INetwork valueNetwork, float probabilityToReach, int playerOfInterest) {
             _parent = parent;
             _gameState = gameState;
             _policyNetwork = policyNetwork;

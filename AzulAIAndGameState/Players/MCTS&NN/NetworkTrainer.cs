@@ -21,7 +21,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
 
             _trainingProcessData = trainingProcessData;
         }
-        public void Train(PolicyNetwork model, int epochCount, int batchSize = 32) {
+        public void Train(INetwork model, int epochCount, int batchSize = 32) {
             Console.WriteLine("Training started");
             float minTestLoss = float.MaxValue;
 
@@ -30,7 +30,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                 // Training
                 for (int i = 0; i < (trainDatasetLoader.DatasetSize + batchSize - 1) / batchSize; i++) {
                     (var states, var policies, var values) = trainDatasetLoader.GetBatch(batchSize);
-                    var statesTensor = torch.stack(states).to(model.device);
+                    var statesTensor = torch.stack(states).to(model.Device);
 
                     var policy = model.Call(statesTensor);
 
@@ -46,7 +46,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                 // Testing
                 for (int i = 0; i < (testDatasetLoader.DatasetSize + batchSize - 1) / batchSize; i++) {
                     (var states, var policies, var values) = testDatasetLoader.GetBatch(batchSize);
-                    var statesTensor = torch.stack(states).to(model.device);
+                    var statesTensor = torch.stack(states).to(model.Device);
 
                     var policy = model.Call(statesTensor);
 
@@ -65,7 +65,8 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                 if (minTestLoss > testLoss) {
                     minTestLoss = testLoss;
                     Console.WriteLine("Saving model on epoch nr." + epoch);
-                    model.save("Models/fullmodel" + epoch + ".v3.nn");
+                    File.AppendAllText(_trainingProcessData, "Saving model on epoch nr." + epoch);
+                    model.Save("Models/smallconvmodel" + epoch + ".v0.nn");
                 }
 
                 trainDatasetLoader.Shuffle();
@@ -73,7 +74,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
             }
         }
 
-        public void TrainValue(ValueNetwork model, int epochCount, int batchSize = 32)
+        public void TrainValue(INetwork model, int epochCount, int batchSize = 32)
         {
             Console.WriteLine("Value training started");
             File.AppendAllText(_trainingProcessData, "Value training started\n");
@@ -86,7 +87,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                 for (int i = 0; i < (trainDatasetLoader.DatasetSize + batchSize - 1) / batchSize; i++)
                 {
                     (var states, _, var correctValues) = trainDatasetLoader.GetBatch(batchSize);
-                    var statesTensor = torch.stack(states).to(model.device);
+                    var statesTensor = torch.stack(states).to(model.Device);
 
                     var value = model.Call(statesTensor);
 
@@ -102,7 +103,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                 for (int i = 0; i < (testDatasetLoader.DatasetSize + batchSize - 1) / batchSize; i++)
                 {
                     (var states, _, var correctValues) = testDatasetLoader.GetBatch(batchSize);
-                    var statesTensor = torch.stack(states).to(model.device);
+                    var statesTensor = torch.stack(states).to(model.Device);
 
                     var value = model.Call(statesTensor);
 
@@ -120,7 +121,8 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                 {
                     minTestLoss = testLoss;
                     Console.WriteLine("Saving model on epoch nr." + epoch);
-                    model.save("Models/valuemodel" + epoch + ".v1.nn");
+                    File.AppendAllText(_trainingProcessData, "Saving model on epoch nr." + epoch);
+                    model.Save("Models/smallconvvaluemodel" + epoch + ".v0.nn");
                 }
 
                 trainDatasetLoader.Shuffle();

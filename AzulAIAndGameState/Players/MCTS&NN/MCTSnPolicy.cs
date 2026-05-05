@@ -10,13 +10,13 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 {
     public class MCTSnPolicy : IPlayerAI
     {
-        private PolicyNetwork _policyModel;
+        private INetwork _policyModel;
         private PolicyGameTreeNode gameTree;
 
         private bool _trainingOn = false;
         public int timeAllotedMs { get; set; } = 500;
-        public MCTSnPolicy(string policyModelPath, int timeAllotedMs = 500, bool trainingOn = false) {
-            _policyModel = new(policyModelPath);
+        public MCTSnPolicy(INetwork model, int timeAllotedMs = 500, bool trainingOn = false) {
+            _policyModel = model;
             _trainingOn = trainingOn;
             this.timeAllotedMs = timeAllotedMs;
         }
@@ -47,7 +47,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
         }
 
         public void SaveModel(string policyPath) {
-            _policyModel.save(policyPath);
+            _policyModel.Save(policyPath);
         }
     }
 }

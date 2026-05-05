@@ -5,10 +5,10 @@ using static TorchSharp.torch.nn;
 
 namespace AzulAIAndGameState.Players.MCTS_NN.Networks
 {
-    public class ValueNetwork : Module
+    public class ValueNetwork : Module, INetwork
     {
         public Adam optimizer;
-        public Device device;
+        public Device Device { get; private set; }
 
         private Layer fc1;
         private Layer fc2;
@@ -28,9 +28,9 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
         public ValueNetwork(string modelPath = "") : base("ValueOnlyNetwork")
         {
             if (cuda.is_available())
-                device = CUDA;
+                Device = CUDA;
             else
-                device = CPU;
+                Device = CPU;
 
             fc1 = new Layer(301, 512);
             fc2 = new Layer(512, 512);
@@ -51,7 +51,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
 
             if (modelPath != "")
             {
-                load(modelPath).to(device);
+                load(modelPath).to(Device);
             }
             optimizer = optim.Adam(parameters(), lr: 0.001);
         }
@@ -90,5 +90,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
             loss.backward();
             optimizer.step();
         }
+        public void Save(string path) => save(path);
+        public void Load(string path) => load(path);
     }
 }

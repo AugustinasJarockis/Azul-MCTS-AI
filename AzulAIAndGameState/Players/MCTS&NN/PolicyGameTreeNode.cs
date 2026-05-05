@@ -18,7 +18,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
         private float[] filteredPolicyArray = [];
         public torch.Tensor PredictedPolicy { get; private set; }
         private float[] filteredPredictedPolicy;
-        private PolicyNetwork _policyNetwork;
+        private INetwork _policyNetwork;
 
         public float ProbabilityToReach { get; private set; } = 0;
         public int EndsReached { get; set; } = 0;
@@ -27,14 +27,14 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 
         private GeneralGameState _gameState;
 
-        public PolicyGameTreeNode(GeneralGameState gameState, PolicyNetwork policyNetwork) {
+        public PolicyGameTreeNode(GeneralGameState gameState, INetwork policyNetwork) {
             _gameState = gameState;
             _policyNetwork = policyNetwork;
 
             GeneratePossibleMovesAndEval();
         }
 
-        public PolicyGameTreeNode(PolicyGameTreeNode parent, GeneralGameState gameState, PolicyNetwork policyNetwork, float probabilityToReach) {
+        public PolicyGameTreeNode(PolicyGameTreeNode parent, GeneralGameState gameState, INetwork policyNetwork, float probabilityToReach) {
             _parent = parent;
             _gameState = gameState;
             _policyNetwork = policyNetwork;

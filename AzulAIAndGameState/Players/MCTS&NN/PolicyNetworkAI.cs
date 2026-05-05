@@ -11,9 +11,9 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
 {
     public class PolicyNetworkAI : IPlayerAI
     {
-        private PolicyNetwork _model = new();
-        public PolicyNetworkAI(string modelPath) {
-            _model.load(modelPath);
+        private INetwork _model;
+        public PolicyNetworkAI(INetwork model) {
+            _model = model;
         }
         public (byte, TileType, byte) ChooseMove(GeneralGameState gameState) {
             var stateList = gameState.GetListState().Flatten().Select(x => (float)x).ToList();

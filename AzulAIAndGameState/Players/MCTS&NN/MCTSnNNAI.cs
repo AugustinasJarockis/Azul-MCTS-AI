@@ -12,21 +12,21 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 {
     public class MCTSnNNAI : IPlayerAI
     {
-        private PolicyNetwork _policyModel;
-        private ValueNetwork _valueModel;
+        private INetwork _policyModel;
+        private INetwork _valueModel;
         private NeuralGameTreeNode gameTree;
 
         private bool _trainingOn = false;
         Adam? optimizer = null;
         public int timeAllotedMs { get; set; } = 500; 
-        public MCTSnNNAI(string policyModelPath, string valueModelPath, int timeAllotedMs = 500, bool trainingOn = false) {
-            _policyModel = new(policyModelPath);
-            _valueModel = new(valueModelPath);
+        public MCTSnNNAI(INetwork policyModel, INetwork valueModel, int timeAllotedMs = 500, bool trainingOn = false) {
+            _policyModel = policyModel;
+            _valueModel = valueModel;
             _trainingOn = trainingOn;
             this.timeAllotedMs = timeAllotedMs;
 
             if (_trainingOn) {
-                optimizer = torch.optim.Adam(_policyModel.parameters(), lr: 0.001);
+                //optimizer = torch.optim.Adam(_policyModel.parameters(), lr: 0.001);
             }
         }
 
@@ -93,8 +93,8 @@ namespace AzulAIAndGameState.Players.MCTS_NN
         }
 
         public void SaveModel(string policyPath, string valuePath) {
-            _policyModel.save(policyPath);
-            _valueModel.save(valuePath);
+            _policyModel.Save(policyPath);
+            _valueModel.Save(valuePath);
         }
     }
 }

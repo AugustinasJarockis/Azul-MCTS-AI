@@ -23,15 +23,18 @@ using AzulBoardGame.Players.PlayerBase;
 
 //Console.WriteLine("All threads finished");
 
-//var trainer = new NetworkTrainer("GoodMoveDatabaseFull.csv", "TrainingDataOnValue.v1.csv");
+var trainer = new NetworkTrainer("GoodMoveDatabaseFull.csv", "TrainingDataWithSmallConvValue.v0.csv");
 //var model = new PolicyValueNetwork("Models/hmodel48.nn");
+//var model = new ConvolutionalPolicyNetwork();
+//var model = new SmallConvPolicyNetwork();
+var model = new SmallConvValueNetwork();
 //var model = new PolicyNetwork();
 //var model = new ValueNetwork();
 //trainer.TrainLegalAndNoProcessing(model, 50);
 //trainer.Train(model, 100, 512);
-//trainer.TrainValue(model, 100, 512);
+trainer.TrainValue(model, 100, 512);
 
-new GameSetup().Test(100, "MiniMaxVsMCTS.csv");
+//new GameSetup().Test(100, "SmallVsBigConv.csv");
 //((MCTSnNNAI)players[0].PlayerAI).SaveModel("Models/RL4.nn");
 
 //MergeFiles();
@@ -61,10 +64,15 @@ public class GameSetup
         //Player1AI = new();
         //Player2AI = new();
         //Player1AI = new HeuristicAI();
-        Player1AI = new MCTSAIScoreDiffAvg();
+        Player1AI = new PolicyNetworkAI(new ConvolutionalPolicyNetwork("Models/convmodel9.v0.nn"));
+        Player2AI = new PolicyNetworkAI(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
+        //Player2AI = new PolicyNetworkAI(new PolicyNetwork("Models/fullmodel10.v3.nn"));
+        //Player2AI = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel21.v1.nn", trainingOn: false);
+        //Player1AI = new HeuristicAI();
+        //Player1AI = new MCTSAIScoreDiffAvg();
         //Player2AI = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel21.v1.nn", trainingOn: false);
         //Player2AI = new MCTSnCustomEval("Models/fullmodel10.v3.nn", trainingOn: false);
-        Player2AI = new MinimaxAI();
+        //Player2AI = new MinimaxAI();
         Player1 = new(gameState.PlayerBoardStates[0], Player1AI);
         Player2 = new(gameState.PlayerBoardStates[1], Player2AI);
     

@@ -5,58 +5,63 @@ using static TorchSharp.torch.nn;
 
 namespace AzulAIAndGameState.Players.MCTS_NN.Networks
 {
-    public class PolicyNetwork : Module, INetwork
-    { 
+    public class ConvolutionalPolicyNetwork : Module, INetwork
+    {
         public Adam optimizer;
         public Device Device { get; private set; }
 
         private Layer fc1;
-        private Layer fc2;
-        private Layer fc3;
-        private Layer fc4;
-        private Layer fc5;
-        private Layer fc6;
-        private Layer fc7;
-        private Layer fc8;
-        private Layer fc9;
+        private ConvolutionalLayer fc2;
+        private ConvolutionalLayer fc3;
+        private ConvolutionalLayer fc4;
+        private ConvolutionalLayer fc5;
+        private ConvolutionalLayer fc6;
+        private ConvolutionalLayer fc7;
+        private ConvolutionalLayer fc8;
+        private ConvolutionalLayer fc9;
         private Layer fc10;
-        private Layer fc11;
-        private Layer fc12;
-        private Layer fc13;
-        private Layer fc14;
+        private ConvolutionalLayer fc11;
+        private ConvolutionalLayer fc12;
+        private ConvolutionalLayer fc13;
+        private ConvolutionalLayer fc14;
 
-        public PolicyNetwork(string modelPath = "") : base("PolicyOnlyNetwork") {
+        public ConvolutionalPolicyNetwork(string modelPath = "") : base("ConvolutionalPolicyOnlyNetwork")
+        {
             if (cuda.is_available())
                 Device = CUDA;
             else
                 Device = CPU;
-            
+
             fc1 = new Layer(301, 512);
-            fc2 = new Layer(512, 512);
-            fc3 = new Layer(512, 512);
-            fc4 = new Layer(512, 512);
-            fc5 = new Layer(512, 512);
-            fc6 = new Layer(512, 512);
-            fc7 = new Layer(512, 512);
-            fc8 = new Layer(512, 512);
-            fc9 = new Layer(512, 512);
-            fc11 = new Layer(512, 512);
-            fc12 = new Layer(512, 512);
-            fc13 = new Layer(512, 512);
-            fc14 = new Layer(512, 512);
+            fc2 = new ConvolutionalLayer(3);
+            fc3 = new ConvolutionalLayer(3);
+            fc4 = new ConvolutionalLayer(3);
+            fc5 = new ConvolutionalLayer(3);
+            fc6 = new ConvolutionalLayer(3);
+            fc7 = new ConvolutionalLayer(3);
+            fc8 = new ConvolutionalLayer(3);
+            fc9 = new ConvolutionalLayer(3);
+            fc11 = new ConvolutionalLayer(3);
+            fc12 = new ConvolutionalLayer(3);
+            fc13 = new ConvolutionalLayer(3);
+            fc14 = new ConvolutionalLayer(3);
             fc10 = new Layer(512, 180);
 
             RegisterComponents();
 
-            if (modelPath != "") {
+            if (modelPath != "")
+            {
                 load(modelPath).to(Device);
             }
             optimizer = optim.Adam(parameters(), lr: 0.001);
         }
 
-        public Tensor Call(Tensor x) {
+        public Tensor Call(Tensor x)
+        {
             var residual = fc1.Forward(x);
-            
+
+            residual = residual.reshape(residual.shape[0], 1, 32, 16);
+
             var x1 = fc2.ForwardWithRelu(residual);
             var x2 = fc3.ForwardWithRelu(x1);
             var x3 = fc4.ForwardWithRelu(x2);
@@ -73,12 +78,14 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
             x = fc13.ForwardWithRelu(x, x2);
             x = fc14.ForwardWithRelu(x, x1);
 
+            x = x.flatten(start_dim: 1);
             x = fc10.Forward(x);
 
             return x;
         }
 
-        public void TrainWithLoss(Tensor loss) {
+        public void TrainWithLoss(Tensor loss)
+        {
             optimizer.zero_grad();
             float lossValue = loss.item<float>();
             //Console.WriteLine("Backpropagating: " + lossValue);
@@ -89,20 +96,24 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
         public void Load(string path) => load(path);
     }
 
-    internal class Layer : Module {
-        private Linear fc;
+    internal class ConvolutionalLayer : Module
+    {
+        private Conv2d fc;
 
-        public Layer(int input, int output) : base("LinearWrapper") {
-            fc = Linear(input, output);
+        public ConvolutionalLayer(int kernelSize) : base("LinearWrapper")
+        {
+            fc = Conv2d(1, 1, kernelSize, stride: 1, padding: 1);
 
             RegisterComponents();
         }
 
-        public Tensor Forward(Tensor x) {
+        public Tensor Forward(Tensor x)
+        {
             x = fc.forward(x);
             return x;
         }
-        public Tensor Forward(Tensor x, Tensor residual) {
+        public Tensor Forward(Tensor x, Tensor residual)
+        {
             x = fc.forward(x);
             x = x + residual;
             return x;
@@ -113,11 +124,13 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
             x = functional.relu(x);
             return x;
         }
-        public Tensor ForwardWithRelu(Tensor x, Tensor residual) {
+        public Tensor ForwardWithRelu(Tensor x, Tensor residual)
+        {
             x = fc.forward(x);
             x = x + residual;
             x = functional.relu(x);
             return x;
         }
     }
+
 }
