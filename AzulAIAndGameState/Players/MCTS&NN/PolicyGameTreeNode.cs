@@ -189,7 +189,8 @@ namespace AzulAIAndGameState.Players.MCTS_NN
                     player.CalculateAdditionalPoints();
 
                 //double score = Math.Sign(PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates));
-                double score = PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates);
+                //double score = PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates);
+                double score = PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates) / (_gameState.PlayerBoardStates.Sum(s => s.Points));
                 CumulativeAttemptScore += score;
                 EndsReached++;
                 return -score;
@@ -202,7 +203,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
             double attemptValue = 0;
             try {
                 attemptValue = (double)reachableStates.MaxBy(
-                    s => (-s.CumulativeAttemptScore / s.EndsReached) + 20 * (s.ProbabilityToReach * (Math.Sqrt(EndsReached) / (1 + s.EndsReached)))
+                    s => (-s.CumulativeAttemptScore / s.EndsReached) + 2 * (s.ProbabilityToReach * (Math.Sqrt(EndsReached) / (1 + s.EndsReached)))
                     )?.PlayOut()!;
             }
             catch (Exception e) {

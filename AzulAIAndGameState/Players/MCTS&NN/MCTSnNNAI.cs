@@ -72,19 +72,15 @@ namespace AzulAIAndGameState.Players.MCTS_NN
             try {
                 var targetPolicy = gameTree.GetMCTSUpdatedPolicy();
                 var predictedPolicyLog = functional.log_softmax(gameTree.PredictedPolicy, 0);
-                var policyLoss = -(targetPolicy * predictedPolicyLog).sum(0).mean();
+                var policyLoss = -(targetPolicy * predictedPolicyLog).sum().mean();
                 _policyModel.TrainWithLoss(policyLoss);
 
-                var valueLoss = functional.mse_loss(gameTree.ValuePrediction, (float)gameTree.CalculatedValue);
+                var valueLoss = functional.smooth_l1_loss(gameTree.ValuePrediction.squeeze(), (float)gameTree.CalculatedValue, beta: 0.5);
             _valueModel.TrainWithLoss(valueLoss);
-            //optimizer?.zero_grad();
-            //valueLoss.backward();
-            //optimizer?.step();
-
 
             double lossValue = (double)valueLoss.item<float>();
-            Console.WriteLine("Nodes visited: " + gameTree.EndsReached + " | Loss: " + lossValue);
-            File.AppendAllText("LossValueAttempt1.txt", lossValue + "\n");
+            Console.WriteLine("Nodes visited: " + gameTree.EndsReached + " | Loss: " + lossValue.ToString("F15"));
+            File.AppendAllText("LossValueAttemptLong.txt", lossValue + "\n");
             }
             catch (Exception e){
                 Console.WriteLine(e.ToString());

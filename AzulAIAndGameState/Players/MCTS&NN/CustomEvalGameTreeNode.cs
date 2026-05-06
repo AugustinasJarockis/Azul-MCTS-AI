@@ -18,7 +18,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
         private float[] filteredPredictedPolicy;
         public float NetworkValue { get; private set; } = 0;
 
-        private PolicyNetwork _policyNetwork;
+        private INetwork _policyNetwork;
 
         public float ProbabilityToReach { get; private set; } = 0;
         public int EndsReached { get; set; } = 0;
@@ -27,14 +27,14 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 
         private GeneralGameState _gameState;
 
-        public CustomEvalGameTreeNode(GeneralGameState gameState, PolicyNetwork policyNetwork) {
+        public CustomEvalGameTreeNode(GeneralGameState gameState, INetwork policyNetwork) {
             _gameState = gameState;
             _policyNetwork = policyNetwork;
 
             GeneratePossibleMovesAndEval();
         }
 
-        public CustomEvalGameTreeNode(GeneralGameState gameState, PolicyNetwork policyNetwork, float probabilityToReach) {
+        public CustomEvalGameTreeNode(GeneralGameState gameState, INetwork policyNetwork, float probabilityToReach) {
             _gameState = gameState;
             _policyNetwork = policyNetwork;
             ProbabilityToReach = probabilityToReach;
@@ -61,8 +61,8 @@ namespace AzulAIAndGameState.Players.MCTS_NN
             return new(currentGameState.Copy(), _policyNetwork);
         }
 
-        public (byte, TileType, byte) GetBestMove() => possibleMoves[reachableStates.IndexOf(reachableStates.MaxBy(s => -s.CalculatedValue))];
-        //public (byte, TileType, byte) GetBestMove() => possibleMoves[reachableStates.IndexOf(reachableStates.MaxBy(s => s.EndsReached - 0.1 * s.NetworkValue))];
+        //public (byte, TileType, byte) GetBestMove() => possibleMoves[reachableStates.IndexOf(reachableStates.MaxBy(s => -s.CalculatedValue))];
+        public (byte, TileType, byte) GetBestMove() => possibleMoves[reachableStates.IndexOf(reachableStates.MaxBy(s => s.EndsReached - 0.1 * s.NetworkValue))];
 
         public torch.Tensor GetUpdatedPolicyTensor() {
             var possibleMoveTensor = reachableStates.Select(s => s.CalculatedValue).ToArray().ToTensor([reachableStates.Count]).softmax(1);
@@ -86,7 +86,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 
             var value = _gameState.EstimatePositionValue();
             PredictedPolicy = policy;
-            NetworkValue = value;
+            NetworkValue = value / 10;
             }
             catch (Exception e) {
                 Console.WriteLine(e.Message);
@@ -190,12 +190,12 @@ namespace AzulAIAndGameState.Players.MCTS_NN
                 var states = torch.stack(evaluatableStates);
                 var policies = _policyNetwork.Call(states);
                 //var policies = torch.zeros([reachableStates.Count, 180]);
-                var values = reachableStates.Select(s => -s._gameState.EstimatePositionValue()).ToArray();
+                var values = reachableStates.Select(s => s._gameState.EstimatePositionValue()).ToArray();
 
                 for (int i = 0; i < reachableStates.Count; i++) {
                     reachableStates[i].PredictedPolicy = policies[i].flatten();
                     reachableStates[i].GenerateFilteredPolicyArray();
-                    reachableStates[i].NetworkValue = values[i];
+                    reachableStates[i].NetworkValue = values[i] / 10;
                     reachableStates[i].CumulativeAttemptScore = reachableStates[i].NetworkValue;
                     reachableStates[i].EndsReached = 1;
                     CumulativeAttemptScore -= reachableStates[i].NetworkValue;
@@ -217,7 +217,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
                     player.CalculateAdditionalPoints();
 
                 //double score = Math.Sign(PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates));
-                double score = PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates);
+                double score = PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates) / (_gameState.PlayerBoardStates.Sum(s => s.Points));
                 CumulativeAttemptScore += score;
                 EndsReached++;
                 return (-score, 1);

@@ -268,7 +268,8 @@ namespace AzulAIAndGameState.Players.MCTS_NN
                 foreach (var player in _gameState.PlayerBoardStates)
                     player.CalculateAdditionalPoints();
 
-                double score = Math.Sign(PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates));
+                //double score = Math.Sign(PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates));
+                double score = PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates) / (_gameState.PlayerBoardStates.Sum(s => s.Points));
                 CumulativeAttemptScore += score;
                 EndsReached++;
 
