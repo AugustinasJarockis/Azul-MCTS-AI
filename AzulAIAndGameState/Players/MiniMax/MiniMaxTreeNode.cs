@@ -76,7 +76,8 @@ namespace AzulAIAndGameState.Players.MiniMax
                 foreach (var player in _gameState.PlayerBoardStates)
                     player.CalculateAdditionalPoints();
 
-                EstimatedValue = 1000 * PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates);
+                //EstimatedValue = 1000 * PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates);
+                EstimatedValue = _gameState.EstimatePositionValue();
                 EndsReached++;
                 BranchCompleted = true;
                 return 1;

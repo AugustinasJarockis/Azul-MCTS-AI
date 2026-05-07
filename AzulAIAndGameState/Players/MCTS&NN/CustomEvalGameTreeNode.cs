@@ -84,9 +84,8 @@ namespace AzulAIAndGameState.Players.MCTS_NN
             var state = stateList.ToArray().ToTensor([1, 301]);
             var policy = _policyNetwork.Call(state).flatten();
 
-            var value = _gameState.EstimatePositionValue();
             PredictedPolicy = policy;
-            NetworkValue = value / 10;
+            NetworkValue = _gameState.EstimatePositionValue() / 10;
             }
             catch (Exception e) {
                 Console.WriteLine(e.Message);
@@ -217,7 +216,8 @@ namespace AzulAIAndGameState.Players.MCTS_NN
                     player.CalculateAdditionalPoints();
 
                 //double score = Math.Sign(PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates));
-                double score = PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates) / (_gameState.PlayerBoardStates.Sum(s => s.Points));
+                //double score = PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates) / (_gameState.PlayerBoardStates.Sum(s => s.Points));
+                double score = _gameState.EstimatePositionValue() / 10;
                 CumulativeAttemptScore += score;
                 EndsReached++;
                 return (-score, 1);

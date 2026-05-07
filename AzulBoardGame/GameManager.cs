@@ -52,10 +52,10 @@ namespace AzulBoardGame
         //public IPlayerAI player1 = new HeuristicAI();
         //public IPlayerAI player1 = new MCTSnPolicy("Models/fullmodel10.v3.nn", trainingOn: false);
         //public IPlayerAI player1 = new MCTSAIScoreDiffAvg();
-        //public IPlayerAI player1 = new MinimaxAI();
+        public IPlayerAI player1 = new MinimaxAI();
         //public IPlayerAI player1 = new MCTSnNNAI(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"), new SmallConvValueNetwork("Models/smallconvvaluemodel71.v0.nn"), trainingOn: false);
         //public IPlayerAI player1 = new MCTSnNNAI(new SmallConvPolicyNetwork("Models/RL/RLPolicy.v0.nn"), new SmallConvValueNetwork("Models/RL/RLValue.v0.nn"), trainingOn: false);
-        public IPlayerAI player1 = new MCTSnPolicy(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"), trainingOn: false);
+        //public IPlayerAI player1 = new MCTSnPolicy(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"), trainingOn: false);
         //var player1 = new MCTSnNNAI("Models/nmodel31.nn", trainingOn: true);
         //public IPlayerAI player2 = new MCTSnNNAI("Models/hmodel48.nn", trainingOn: true);
         //public IPlayerAI player1 = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel58.v0.nn", trainingOn: false, timeAllotedMs: 10000);
