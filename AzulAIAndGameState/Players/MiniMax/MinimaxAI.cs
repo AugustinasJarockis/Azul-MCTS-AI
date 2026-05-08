@@ -14,28 +14,21 @@ namespace AzulAIAndGameState.Players.MiniMax
         }
 
         public (byte, TileType, byte) ChooseMove(GeneralGameState gameState) {
-            try {
-
-                if (gameTree == null) {
-                    gameTree = new(gameState.Copy());
-                }
-                else {
-                    gameTree = gameTree.GetSyncWithManager(gameState.PlayerCount, gameState.Copy());
-                }
-
-                var timer = Stopwatch.StartNew();
-                while (timer.ElapsedMilliseconds < timeAllotedMs) {
-                    gameTree.DelveDeeper(timer, timeAllotedMs);
-                }
-                timer.Stop();
-
-                Console.WriteLine("Nodes visited: " + gameTree.EndsReached);
-                return gameTree.GetBestMove();
+            if (gameTree == null) {
+                gameTree = new(gameState.Copy());
             }
-            catch (Exception ex) {
-                Console.WriteLine(ex.ToString());
-                return (0, 0, 0);
+            else {
+                gameTree = gameTree.GetSyncWithManager(gameState.PlayerCount, gameState.Copy());
             }
+
+            var timer = Stopwatch.StartNew();
+            while (timer.ElapsedMilliseconds < timeAllotedMs && !gameTree.BranchCompleted) {
+                gameTree.DelveDeeper(timer, timeAllotedMs);
+            }
+            timer.Stop();
+
+            Console.WriteLine("Nodes visited: " + gameTree.EndsReached);
+            return gameTree.GetBestMove();
         }
     }
 }

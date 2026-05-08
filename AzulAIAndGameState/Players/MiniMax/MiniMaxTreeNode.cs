@@ -44,7 +44,6 @@ namespace AzulAIAndGameState.Players.MiniMax
         }
 
         public (byte, TileType, byte) GetBestMove() => possibleMoves[reachableStates.IndexOf(reachableStates.MaxBy(s => -s.EstimatedValue))];
-        //public (byte, TileType, byte) GetBestMove() => possibleMoves[reachableStates.IndexOf(reachableStates.MaxBy(s => s.EndsReached - 0.1 * s.NetworkValue))];
 
         private void GeneratePossibleMovesAndEval() {
             EstimatedValue = _gameState.EstimatePositionValue();
@@ -71,8 +70,7 @@ namespace AzulAIAndGameState.Players.MiniMax
                 foreach (var player in _gameState.PlayerBoardStates)
                     player.CalculateAdditionalPoints();
 
-                //EstimatedValue = 1000 * PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates);
-                EstimatedValue = _gameState.EstimatePositionValue();
+                EstimatedValue = PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates);
                 EndsReached++;
                 BranchCompleted = true;
                 return 1;
