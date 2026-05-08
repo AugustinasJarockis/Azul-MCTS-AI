@@ -52,20 +52,15 @@ namespace AzulAIAndGameState.Players.MiniMax
             EndsReached = 1;
         }
         private void GenerateReachableStates() {
-            try {
-                while (reachableStates.Count != possibleMoves.Count) {
-                    var newNode = new MiniMaxTreeNode(_gameState.Copy(), false);
-                    var move = possibleMoves[reachableStates.Count];
+            while (reachableStates.Count != possibleMoves.Count) {
+                var newNode = new MiniMaxTreeNode(_gameState.Copy(), false);
+                var move = possibleMoves[reachableStates.Count];
 
-                    newNode._gameState.MakeMove(move);
-                    newNode.GeneratePossibleMovesAndEval();
-                    reachableStates.Add(newNode);
-                }
-                EndsReached += reachableStates.Count;
+                newNode._gameState.MakeMove(move);
+                newNode.GeneratePossibleMovesAndEval();
+                reachableStates.Add(newNode);
             }
-            catch (Exception e) {
-                Console.WriteLine(e.ToString());
-            }
+            EndsReached += reachableStates.Count;
         }
 
         public int DelveDeeper(Stopwatch timer, int timeAllotedMs) {
@@ -91,27 +86,22 @@ namespace AzulAIAndGameState.Players.MiniMax
             int newEndsReached = 0;
             double minScore = reachableStates.Min(s => -s.EstimatedValue);
             double maxScore = reachableStates.Max(s => -s.EstimatedValue);
-            try {
-                var stateToAttempt = reachableStates
-                        .Where(
-                        s => ((-s.EstimatedValue - minScore) / (maxScore - minScore)) + 2 * (1 - (s.EndsReached / EndsReached)) > 0.9
-                        && !s.BranchCompleted
-                        ).ToList();
+            var stateToAttempt = reachableStates
+                    .Where(
+                    s => ((-s.EstimatedValue - minScore) / (maxScore - minScore)) + (1 - (s.EndsReached / EndsReached)) > 0.9
+                    && !s.BranchCompleted
+                    ).ToList();
 
-                if (stateToAttempt.Count() != 0) {  
-                    for (int i = 0; i < stateToAttempt.Count() && timer.ElapsedMilliseconds < timeAllotedMs; i++) {
-                        newEndsReached += stateToAttempt[i].DelveDeeper(timer, timeAllotedMs);
-                    }
-                }
-                else {
-                    var toVisitAnyway = reachableStates.Where(s => !s.BranchCompleted).ToList();
-                    for (int i = 0; i < toVisitAnyway.Count() && timer.ElapsedMilliseconds < timeAllotedMs; i++) {
-                        newEndsReached += toVisitAnyway[i].DelveDeeper(timer, timeAllotedMs);
-                    }
+            if (stateToAttempt.Count() != 0) {  
+                for (int i = 0; i < stateToAttempt.Count() && timer.ElapsedMilliseconds < timeAllotedMs; i++) {
+                    newEndsReached += stateToAttempt[i].DelveDeeper(timer, timeAllotedMs);
                 }
             }
-            catch (Exception e) {
-                Console.WriteLine(e.ToString());
+            else {
+                var toVisitAnyway = reachableStates.Where(s => !s.BranchCompleted).ToList();
+                for (int i = 0; i < toVisitAnyway.Count() && timer.ElapsedMilliseconds < timeAllotedMs; i++) {
+                    newEndsReached += toVisitAnyway[i].DelveDeeper(timer, timeAllotedMs);
+                }
             }
 
             EndsReached += newEndsReached;

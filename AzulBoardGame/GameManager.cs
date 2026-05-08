@@ -77,7 +77,6 @@ namespace AzulBoardGame
                 TranslateTransform = translateTransform
             };
 
-            try {
             CreateGameBoardObjects();
 
             _canvasControls.Canvas.KeyDown += (s, e) => {
@@ -89,12 +88,6 @@ namespace AzulBoardGame
             //Test(100, "PossiblyWorkingRL2.csv");
             if (runTests) {
                 Test(100, "PolicyVsRandom.csv");
-                //RunTests();
-            }
-
-            }
-            catch (Exception ex) {
-                Console.WriteLine(ex.ToString());
             }
         }
 
@@ -162,41 +155,6 @@ namespace AzulBoardGame
             CreateGameBoardObjects();
         }
 
-        private async Task RunTests() {
-            //0.001s
-            await Test(100, "HeuristicTime0.001s.csv", 1);
-            //0.002s
-            await Test(100, "HeuristicTime0.002s.csv", 2);
-            //0.005s
-            await Test(100, "HeuristicTime0.005s.csv", 5);
-            //0.01s
-            await Test(100, "HeuristicTime0.01s.csv", 10);
-            //0.025s
-            await Test(100, "HeuristicTime0.025s.csv", 25);
-            //0.05s
-            await Test(100, "HeuristicTime0.05s.csv", 50);
-            //0.1s
-            await Test(100, "HeuristicTime0.1s.csv", 100);
-            //0.2s
-            await Test(100, "HeuristicTime0.2s.csv", 200);
-            //0.3s
-            await Test(100, "HeuristicTime0.3s.csv", 300);
-            //0.4s
-            await Test(100, "HeuristicTime0.4s.csv", 400);
-            //0.5s
-            await Test(100, "HeuristicTime0.5s.csv", 500);
-            //0.6s
-            await Test(100, "HeuristicTime0.6s.csv", 600);
-            //0.7s
-            await Test(100, "HeuristicTime0.7s.csv", 700);
-            //0.8s
-            await Test(100, "HeuristicTime0.8s.csv", 800);
-            //0.9s
-            await Test(100, "HeuristicTime0.9s.csv", 900);
-            //1s
-            await Test(100, "HeuristicTime1s.csv", 1000);
-        }
-
         private async Task Test(int count, string filename, int player1TimeMs = -1) {
             File.Create(filename);
 
@@ -259,14 +217,8 @@ namespace AzulBoardGame
 
                 await WaitToContinue();
 
-                try {
-
                 foreach (Player player in players)
                     player.CompleteRound();
-                }
-                catch(Exception ex) {
-                    Console.WriteLine(ex.ToString());
-                }
             }
 
             foreach (Player player in players)

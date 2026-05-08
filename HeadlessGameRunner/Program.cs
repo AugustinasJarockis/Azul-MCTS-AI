@@ -145,49 +145,68 @@ public class GameSetup
     }
 
     public void RunTests() {
-        //0.001s
-        Test(100, "HeuristicTime0.001s.csv", 1);
-        //0.002s
-        Test(100, "HeuristicTime0.002s.csv", 2);
-        //0.005s
-        Test(100, "HeuristicTime0.005s.csv", 5);
-        //0.01s
-        Test(100, "HeuristicTime0.01s.csv", 10);
-        //0.025s
-        Test(100, "HeuristicTime0.025s.csv", 25);
-        //0.05s
-        Test(100, "HeuristicTime0.05s.csv", 50);
-        //0.1s
-        Test(100, "HeuristicTime0.1s.csv", 100);
-        //0.2s
-        Test(100, "HeuristicTime0.2s.csv", 200);
-        //0.3s
-        Test(100, "HeuristicTime0.3s.csv", 300);
-        //0.4s
-        Test(100, "HeuristicTime0.4s.csv", 400);
-        //0.5s
-        Test(100, "HeuristicTime0.5s.csv", 500);
-        //0.6s
-        Test(100, "HeuristicTime0.6s.csv", 600);
-        //0.7s
-        Test(100, "HeuristicTime0.7s.csv", 700);
-        //0.8s
-        Test(100, "HeuristicTime0.8s.csv", 800);
-        //0.9s
-        Test(100, "HeuristicTime0.9s.csv", 900);
-        //1s
-        Test(100, "HeuristicTime1s.csv", 1000);
+        //Test how different models work
+        Player1.PlayerAI = new PolicyNetworkAI(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
+        Player2.PlayerAI = new PolicyNetworkAI(new SmallConvPolicyNetwork("Models/convmodel9.v0.nn"));
+        Test(100, "FinalTests/SmallVSBigConvModel.csv");
+
+        Player1.PlayerAI = new MCTSnPolicy(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
+        Player2.PlayerAI = new MCTSnPolicy(new SmallConvPolicyNetwork("Models/convmodel9.v0.nn"));
+        Test(100, "FinalTests/SmallVSBigConvModelWithMCTS.csv");
+        
+        // Strategy comparisons
+
+        Player1.PlayerAI = new HeuristicAI();
+        Player2.PlayerAI = new MinimaxAI();
+        Test(100, "FinalTests/HeuristicVSMinimaxAI.csv");
+
+        Player1.PlayerAI = new HeuristicAI();
+        Player2.PlayerAI = new PolicyNetworkAI(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
+        Test(100, "FinalTests/HeuristicVSPolicyOnly.csv");
+
+        Player1.PlayerAI = new HeuristicAI();
+        Player2.PlayerAI = new MCTSnPolicy(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
+        Test(100, "FinalTests/HeuristicVSMCTSnPolicy.csv");
+
+        Player1.PlayerAI = new HeuristicAI();
+        Player2.PlayerAI = new MCTSnCustomEval(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
+        Test(100, "FinalTests/HeuristicVSMCTSnCustomEval.csv");
+
+        Player1.PlayerAI = new HeuristicAI();
+        Player2.PlayerAI = new MCTSnNNAI(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"), new SmallConvValueNetwork("Models/smallconvvaluemodel71.v0.nn"));
+        Test(100, "FinalTests/HeuristicVSMCTSnNNAI.csv");
+
+        Player1.PlayerAI = new MCTSnPolicy(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
+        Player2.PlayerAI = new PolicyNetworkAI(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
+        Test(100, "FinalTests/MCTSnPolicyVSPolicyOnly.csv");
+
+        Player1.PlayerAI = new MCTSnPolicy(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
+        Player2.PlayerAI = new MCTSnCustomEval(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
+        Test(100, "FinalTests/MCTSnPolicyVSMCTSnCustomEval.csv");
+
+        Player1.PlayerAI = new MCTSnCustomEval(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
+        Player2.PlayerAI = new MinimaxAI();
+        Test(100, "FinalTests/MCTSnCustomEvalVSMinimaxAI.csv");
+
+        Player1.PlayerAI = new MCTSnCustomEval(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
+        Player2.PlayerAI = new MCTSnNNAI(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"), new SmallConvValueNetwork("Models/smallconvvaluemodel71.v0.nn"));
+        Test(100, "FinalTests/MCTSnCustomEvalVSMCTSnNNAI.csv");
+
+        Player1.PlayerAI = new MCTSnCustomEval(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
+        Player2.PlayerAI = new MCTSAIScoreDiffAvg();
+        Test(100, "FinalTests/MCTSnCustomEvalVSMCTSAIScoreDiffAvg.csv");
+
+        Player1.PlayerAI = new MCTSAIScoreDiffAvg();
+        Player2.PlayerAI = new MinimaxAI();
+        Test(100, "FinalTests/MCTSAIScoreDiffAvgVSMinimaxAI.csv");
     }
 
-    public void Test(int count, string filename, int player1TimeMs = -1) {
+    public void Test(int count, string filename) {
         for (int i = 0; i < count; i++) {
             Console.WriteLine("Playing game nr. " + i);
             int startingPlayer = i / ((count + players.Count - 1) / players.Count);
             gameState.NextRoundStartingPlayer = startingPlayer;
             gameState.CurrentPlayer = startingPlayer;
-            if (player1TimeMs > 0) {
-                ((MCTSAI)players[0].PlayerAI).timeAllotedMs = player1TimeMs;
-            }
             PlayGame();
             WriteResults(filename, startingPlayer);
             ((MCTSnNNAI)Player2AI).SaveModel("Models/RL/RLPolicy.v0.nn", "Models/RL/RLValue.v0.nn");
