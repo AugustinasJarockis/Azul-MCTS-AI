@@ -27,7 +27,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 
         public (byte, TileType, byte) ChooseMove(GeneralGameState gameState) {
             if (gameTree == null) {
-                gameTree = new(gameState.Copy(), _policyModel, _valueModel, gameState.CurrentPlayer);
+                gameTree = new(gameState.Copy(), _policyModel, _valueModel);
             }
             else {
                 gameTree = gameTree.GetSyncWithManager(gameState.PlayerCount, gameState.Copy());

@@ -66,7 +66,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                     minTestLoss = testLoss;
                     Console.WriteLine("Saving model on epoch nr." + epoch);
                     File.AppendAllText(_trainingProcessData, "Saving model on epoch nr." + epoch);
-                    model.Save("Models/smallconvmodel" + epoch + ".v0.nn");
+                    model.Save("Models/smalllinearmodel" + epoch + ".v0.nn");
                 }
 
                 trainDatasetLoader.Shuffle();

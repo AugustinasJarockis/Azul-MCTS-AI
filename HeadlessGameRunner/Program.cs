@@ -23,18 +23,19 @@ using AzulBoardGame.Players.PlayerBase;
 
 //Console.WriteLine("All threads finished");
 
-//var trainer = new NetworkTrainer("GoodMoveDatabaseFull.csv", "TrainingDataWithSmallConvValue.v0.csv");
+//var trainer = new NetworkTrainer("GoodMoveDatabaseFull.csv", "SmallLinearTraining.v0.csv");
 //var model = new PolicyValueNetwork("Models/hmodel48.nn");
 //var model = new ConvolutionalPolicyNetwork();
 //var model = new SmallConvPolicyNetwork();
 //var model = new SmallConvValueNetwork();
 //var model = new PolicyNetwork();
+//var model = new SmallLinearPolicyNetwork();
 //var model = new ValueNetwork();
 //trainer.TrainLegalAndNoProcessing(model, 50);
 //trainer.Train(model, 100, 512);
 //trainer.TrainValue(model, 100, 512);
 
-new GameSetup().Test(10000, "TestReinforcementLearning.v1.csv");
+//new GameSetup().Test(10000, "TestReinforcementLearning.v1.csv");
 //((MCTSnNNAI)players[0].PlayerAI).SaveModel("Models/RL4.nn");
 
 //MergeFiles();
