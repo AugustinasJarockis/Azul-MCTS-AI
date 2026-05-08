@@ -3,8 +3,6 @@ using AzulBoardGame.Enums;
 using AzulBoardGame.GameState;
 using AzulBoardGame.Players.PlayerBase;
 using System.Diagnostics;
-using TorchSharp;
-using TorchSharp.Modules;
 
 namespace AzulAIAndGameState.Players.MCTS_NN
 {
@@ -22,8 +20,6 @@ namespace AzulAIAndGameState.Players.MCTS_NN
         }
 
         public (byte, TileType, byte) ChooseMove(GeneralGameState gameState) {
-            try {
-
             if (gameTree == null) {
                 gameTree = new(gameState.Copy(), _policyModel);
             }
@@ -39,11 +35,6 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 
             Console.WriteLine("Nodes visited: " + gameTree.EndsReached);
             return gameTree.GetBestMove();
-            }
-            catch(Exception ex) {
-                Console.WriteLine(ex.ToString());
-                return (0, 0, 0);
-            }
         }
 
         public void SaveModel(string policyPath) {

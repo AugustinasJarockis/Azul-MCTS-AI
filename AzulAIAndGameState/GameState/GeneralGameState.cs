@@ -77,51 +77,18 @@ namespace AzulBoardGame.GameState
                 );
         }
 
-        public float EstimatePositionValue() {
-            try {
-
+        public float EstimatePositionValue(bool divBySum = false) {
             var currentPlayerState = PlayerBoardStates[CurrentPlayer];
             var oponentsState = PlayerBoardStates[(CurrentPlayer + 1) % 2];
 
-                int[] remainingtileCounts = new int[5];
-                for (int i = 0; i < remainingtileCounts.Length; i++) {
-                    remainingtileCounts[i] =
-                        TilePlatesState.CenterTileTypes.Count(t => (int)t == (i + 1))
-                        + TilePlatesState.Plates.Sum(p => p.TileTypes.Count(t => (int)t == (i + 1)));
-                }
-
-                int playerUnfilledSpots = 0;
-                int oponentUnfilledSpots = 0;
-                for (int i = 0; i < 5; i++) {
-                    if (!currentPlayerState.tileRows[i].IsEmpty && !currentPlayerState.tileRows[i].IsFull) {
-                        //playerUnfilledSpots += currentPlayerState.tileRows[i].FreeSlotCount;
-
-                        if (remainingtileCounts[(int)currentPlayerState.tileRows[i].RowTileType! - 1] < currentPlayerState.tileRows[i].FreeSlotCount) {
-                            playerUnfilledSpots += currentPlayerState.tileRows[i].FreeSlotCount;
-                        }
-                    }
-
-                    if (!oponentsState.tileRows[i].IsEmpty && !oponentsState.tileRows[i].IsFull) {
-                        //oponentUnfilledSpots += oponentsState.tileRows[i].FreeSlotCount;
-
-                        if (remainingtileCounts[(int)oponentsState.tileRows[i].RowTileType! - 1] < oponentsState.tileRows[i].FreeSlotCount) {
-                            oponentUnfilledSpots += oponentsState.tileRows[i].FreeSlotCount;
-                        }
-                    }
-                }
-
-                int earnedPoints = currentPlayerState.EstimateEarnedPoints();
+            int earnedPoints = currentPlayerState.EstimateEarnedPoints();
             int oponentEarnedPoints = oponentsState.EstimateEarnedPoints();
 
-            return Math.Max(0, currentPlayerState.Points + earnedPoints)
-                //- playerUnfilledSpots
-                - Math.Max(0, oponentsState.Points + oponentEarnedPoints)
-                ;//+ oponentUnfilledSpots;
-            }
-            catch (Exception ex) {
-                Console.WriteLine(ex.ToString());
-                return 0;
-            }
+            int totalPoints = Math.Max(0, currentPlayerState.Points + earnedPoints);
+            int oponentTotalPoints = Math.Max(0, oponentsState.Points + oponentEarnedPoints);
+
+            //return  (totalPoints - oponentTotalPoints) / (divBySum && (totalPoints + oponentTotalPoints) > 0 ? (totalPoints + oponentTotalPoints) : 1);
+            return  (totalPoints - oponentTotalPoints) / (divBySum && (totalPoints + oponentTotalPoints) > 0 ? 10 : 1);
         }
 
         public bool IsMovePossible((byte plate, TileType type, byte row) move) {

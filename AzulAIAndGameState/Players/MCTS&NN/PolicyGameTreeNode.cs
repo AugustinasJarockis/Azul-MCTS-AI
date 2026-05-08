@@ -190,7 +190,8 @@ namespace AzulAIAndGameState.Players.MCTS_NN
 
                 //double score = Math.Sign(PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates));
                 //double score = PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates);
-                double score = PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates) / (_gameState.PlayerBoardStates.Sum(s => s.Points));
+                int pointSum = _gameState.PlayerBoardStates.Sum(s => s.Points);
+                double score = pointSum != 0 ? PointDifference(_gameState.CurrentPlayer, _gameState.PlayerBoardStates) / pointSum : 0;
                 CumulativeAttemptScore += score;
                 EndsReached++;
                 return -score;
