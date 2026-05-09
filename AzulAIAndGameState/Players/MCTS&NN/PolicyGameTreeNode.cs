@@ -89,13 +89,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
             EvaluatePosition();
             CumulativeAttemptScore = 0;
             GeneratePossibleMoves();
-            try {
-
-                GenerateFilteredPolicyArray();
-            }
-            catch (Exception ex) {
-                Console.WriteLine(ex.ToString());
-            }
+            GenerateFilteredPolicyArray();
             EndsReached = 1;
         }
 
@@ -121,63 +115,52 @@ namespace AzulAIAndGameState.Players.MCTS_NN
         }
 
         private void GenerateFilteredPolicyArray() {
-            try {
-                var filteredPolicyTensor = torch.empty([possibleMoves.Count]);
-                for (int i = 0; i < possibleMoves.Count; i++) {
-                    filteredPolicyTensor[i] = PredictedPolicy[MoveConverter.MoveTupleToInt(possibleMoves[i])];
-                }
-                filteredPolicyArray = filteredPolicyTensor.softmax(0).data<float>().ToArray();
+            var filteredPolicyTensor = torch.empty([possibleMoves.Count]);
+            for (int i = 0; i < possibleMoves.Count; i++) {
+                filteredPolicyTensor[i] = PredictedPolicy[MoveConverter.MoveTupleToInt(possibleMoves[i])];
             }
-            catch (Exception ex) {
-                Console.WriteLine(ex.ToString());
-            }
+            filteredPolicyArray = filteredPolicyTensor.softmax(0).data<float>().ToArray();
         }
 
         private void GenerateReachableStates() {
-            try {
+            List<torch.Tensor> evaluatableStates = [];
 
-                List<torch.Tensor> evaluatableStates = [];
+            while (reachableStates.Count != possibleMoves.Count) {
+                var newNode = new PolicyGameTreeNode(
+                    this,
+                    _gameState.Copy(),
+                    _policyNetwork,
+                    filteredPolicyArray[reachableStates.Count]
+                    );
+                var move = possibleMoves[reachableStates.Count];
 
-                while (reachableStates.Count != possibleMoves.Count) {
-                    var newNode = new PolicyGameTreeNode(
-                        this,
-                        _gameState.Copy(),
-                        _policyNetwork,
-                        filteredPolicyArray[reachableStates.Count]
-                        );
-                    var move = possibleMoves[reachableStates.Count];
+                newNode._gameState.MakeMove(move);
+                newNode.GeneratePossibleMoves();
 
-                    newNode._gameState.MakeMove(move);
-                    newNode.GeneratePossibleMoves();
+                var evaluatable = newNode._gameState.GetListState().Flatten().Select(e => (float)e).ToList();
+                newNode.possibleMoveArray = newNode.GeneratePossibleMoveMatrix();
+                evaluatable.AddRange(newNode.possibleMoveArray);
+                evaluatableStates.Add(evaluatable.ToArray().ToTensor([301]));
 
-                    var evaluatable = newNode._gameState.GetListState().Flatten().Select(e => (float)e).ToList();
-                    newNode.possibleMoveArray = newNode.GeneratePossibleMoveMatrix();
-                    evaluatable.AddRange(newNode.possibleMoveArray);
-                    evaluatableStates.Add(evaluatable.ToArray().ToTensor([301]));
-
-                    reachableStates.Add(newNode);
-                }
-
-                var states = torch.stack(evaluatableStates);
-                var policies = _policyNetwork.Call(states);
-                List<float> policyData = [];
-                for (int i = 0; i < reachableStates.Count; i++) {
-                    List<float> array = policies[i].data<float>().ToList();
-                    policyData.Add(array.Sum());
-                }
-
-                for (int i = 0; i < reachableStates.Count; i++) {
-                    reachableStates[i].PredictedPolicy = policies[i].flatten();
-                    reachableStates[i].GenerateFilteredPolicyArray();
-                    reachableStates[i].CumulativeAttemptScore = 0;
-                    reachableStates[i].EndsReached = 1;
-                }
-
-                EndsReached += reachableStates.Count;
+                reachableStates.Add(newNode);
             }
-            catch (Exception e) {
-                Console.WriteLine(e.ToString());
+
+            var states = torch.stack(evaluatableStates);
+            var policies = _policyNetwork.Call(states);
+            List<float> policyData = [];
+            for (int i = 0; i < reachableStates.Count; i++) {
+                List<float> array = policies[i].data<float>().ToList();
+                policyData.Add(array.Sum());
             }
+
+            for (int i = 0; i < reachableStates.Count; i++) {
+                reachableStates[i].PredictedPolicy = policies[i].flatten();
+                reachableStates[i].GenerateFilteredPolicyArray();
+                reachableStates[i].CumulativeAttemptScore = 0;
+                reachableStates[i].EndsReached = 1;
+            }
+
+            EndsReached += reachableStates.Count;
         }
 
         public double PlayOut() {
@@ -202,14 +185,9 @@ namespace AzulAIAndGameState.Players.MCTS_NN
             }
 
             double attemptValue = 0;
-            try {
-                attemptValue = (double)reachableStates.MaxBy(
-                    s => (-s.CumulativeAttemptScore / s.EndsReached) + 2 * (s.ProbabilityToReach * (Math.Sqrt(EndsReached) / (1 + s.EndsReached)))
-                    )?.PlayOut()!;
-            }
-            catch (Exception e) {
-                Console.WriteLine(e.ToString());
-            }
+            attemptValue = (double)reachableStates.MaxBy(
+                s => (-s.CumulativeAttemptScore / s.EndsReached) + 2 * (s.ProbabilityToReach * (Math.Sqrt(EndsReached) / (1 + s.EndsReached)))
+                )?.PlayOut()!;
 
             EndsReached++;
             CumulativeAttemptScore += attemptValue;

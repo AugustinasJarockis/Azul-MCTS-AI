@@ -20,28 +20,21 @@ namespace AzulAIAndGameState.Players.MCTS_NN
         }
 
         public (byte, TileType, byte) ChooseMove(GeneralGameState gameState) {
-            try {
-
-                if (gameTree == null) {
-                    gameTree = new(gameState.Copy(), _policyModel);
-                }
-                else {
-                    gameTree = gameTree.GetSyncWithManager(gameState.PlayerCount, gameState.Copy());
-                }
-
-                var timer = Stopwatch.StartNew();
-                while (timer.ElapsedMilliseconds < timeAllotedMs) {
-                    gameTree.PlayOut();
-                }
-                timer.Stop();
-
-                Console.WriteLine("Nodes visited: " + gameTree.EndsReached);
-                return gameTree.GetBestMove();
+            if (gameTree == null) {
+                gameTree = new(gameState.Copy(), _policyModel);
             }
-            catch (Exception ex) {
-                Console.WriteLine(ex.ToString());
-                return (0, 0, 0);
+            else {
+                gameTree = gameTree.GetSyncWithManager(gameState.PlayerCount, gameState.Copy());
             }
+
+            var timer = Stopwatch.StartNew();
+            while (timer.ElapsedMilliseconds < timeAllotedMs) {
+                gameTree.PlayOut();
+            }
+            timer.Stop();
+
+            //Console.WriteLine("Nodes visited: " + gameTree.EndsReached);
+            return gameTree.GetBestMove();
         }
 
         public void SaveModel(string policyPath) {

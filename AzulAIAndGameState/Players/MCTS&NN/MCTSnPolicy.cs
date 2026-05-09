@@ -33,7 +33,7 @@ namespace AzulAIAndGameState.Players.MCTS_NN
             }
             timer.Stop();
 
-            Console.WriteLine("Nodes visited: " + gameTree.EndsReached);
+            //Console.WriteLine("Nodes visited: " + gameTree.EndsReached);
             return gameTree.GetBestMove();
         }
 

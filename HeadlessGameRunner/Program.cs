@@ -38,6 +38,8 @@ using AzulBoardGame.Players.PlayerBase;
 //new GameSetup().Test(10000, "TestReinforcementLearning.v1.csv");
 //((MCTSnNNAI)players[0].PlayerAI).SaveModel("Models/RL4.nn");
 
+new GameSetup().RunTests();
+
 //MergeFiles();
 //void MergeFiles()
 //{
@@ -147,56 +149,101 @@ public class GameSetup
 
     public void RunTests() {
         //Test how different models work
+        Console.WriteLine("Testing batch nr. 1");
         Player1.PlayerAI = new PolicyNetworkAI(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
-        Player2.PlayerAI = new PolicyNetworkAI(new SmallConvPolicyNetwork("Models/convmodel9.v0.nn"));
+        Player2.PlayerAI = new PolicyNetworkAI(new ConvolutionalPolicyNetwork("Models/convmodel9.v0.nn"));
         Test(100, "FinalTests/SmallVSBigConvModel.csv");
 
+        Console.WriteLine("Testing batch nr. 2");
         Player1.PlayerAI = new MCTSnPolicy(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
-        Player2.PlayerAI = new MCTSnPolicy(new SmallConvPolicyNetwork("Models/convmodel9.v0.nn"));
+        Player2.PlayerAI = new MCTSnPolicy(new ConvolutionalPolicyNetwork("Models/convmodel9.v0.nn"));
         Test(100, "FinalTests/SmallVSBigConvModelWithMCTS.csv");
-        
+
+        Console.WriteLine("Testing batch nr. 3");
+        Player1.PlayerAI = new PolicyNetworkAI(new PolicyNetwork("Models/fullmodel10.v3.nn"));
+        Player2.PlayerAI = new PolicyNetworkAI(new SmallLinearPolicyNetwork("Models/smalllinearmodel5.v0.nn"));
+        Test(100, "FinalTests/SmallVSBigLinearModel.csv");
+
+        Console.WriteLine("Testing batch nr. 4");
+        Player1.PlayerAI = new MCTSnPolicy(new PolicyNetwork("Models/fullmodel10.v3.nn"));
+        Player2.PlayerAI = new MCTSnPolicy(new SmallLinearPolicyNetwork("Models/smalllinearmodel5.v0.nn"));
+        Test(100, "FinalTests/SmallVSBigLinearModelWithMCTS.csv");
+
+        Console.WriteLine("Testing batch nr. 5");
+        Player1.PlayerAI = new PolicyNetworkAI(new PolicyNetwork("Models/fullmodel10.v3.nn"));
+        Player2.PlayerAI = new PolicyNetworkAI(new ConvolutionalPolicyNetwork("Models/convmodel9.v0.nn"));
+        Test(100, "FinalTests/ConvVSLinearBigModel.csv");
+
+        Console.WriteLine("Testing batch nr. 6");
+        Player1.PlayerAI = new MCTSnPolicy(new PolicyNetwork("Models/fullmodel10.v3.nn"));
+        Player2.PlayerAI = new MCTSnPolicy(new ConvolutionalPolicyNetwork("Models/convmodel9.v0.nn"));
+        Test(100, "FinalTests/ConvVSLinearBigModelWithMCTS.csv");
+
+        Console.WriteLine("Testing batch nr. 7");
+        Player1.PlayerAI = new PolicyNetworkAI(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
+        Player2.PlayerAI = new PolicyNetworkAI(new SmallLinearPolicyNetwork("Models/smalllinearmodel5.v0.nn"));
+        Test(100, "FinalTests/ConvVSLinearSmallModel.csv");
+
+        Console.WriteLine("Testing batch nr. 8");
+        Player1.PlayerAI = new MCTSnPolicy(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
+        Player2.PlayerAI = new MCTSnPolicy(new SmallLinearPolicyNetwork("Models/smalllinearmodel5.v0.nn"));
+        Test(100, "FinalTests/ConvVSLinearSmallModelWithMCTS.csv");
+
         // Strategy comparisons
 
+        // Heuristic vs oponents
+
+        Console.WriteLine("Testing batch nr. 9");
         Player1.PlayerAI = new HeuristicAI();
         Player2.PlayerAI = new MinimaxAI();
         Test(100, "FinalTests/HeuristicVSMinimaxAI.csv");
 
+        Console.WriteLine("Testing batch nr. 10");
         Player1.PlayerAI = new HeuristicAI();
         Player2.PlayerAI = new PolicyNetworkAI(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
         Test(100, "FinalTests/HeuristicVSPolicyOnly.csv");
 
+        Console.WriteLine("Testing batch nr. 11");
         Player1.PlayerAI = new HeuristicAI();
         Player2.PlayerAI = new MCTSnPolicy(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
         Test(100, "FinalTests/HeuristicVSMCTSnPolicy.csv");
 
+        Console.WriteLine("Testing batch nr. 12");
         Player1.PlayerAI = new HeuristicAI();
         Player2.PlayerAI = new MCTSnCustomEval(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
         Test(100, "FinalTests/HeuristicVSMCTSnCustomEval.csv");
 
+        Console.WriteLine("Testing batch nr. 13");
         Player1.PlayerAI = new HeuristicAI();
         Player2.PlayerAI = new MCTSnNNAI(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"), new SmallConvValueNetwork("Models/smallconvvaluemodel71.v0.nn"));
         Test(100, "FinalTests/HeuristicVSMCTSnNNAI.csv");
 
+        Console.WriteLine("Testing batch nr. 14");
         Player1.PlayerAI = new MCTSnPolicy(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
         Player2.PlayerAI = new PolicyNetworkAI(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
         Test(100, "FinalTests/MCTSnPolicyVSPolicyOnly.csv");
 
+        Console.WriteLine("Testing batch nr. 15");
         Player1.PlayerAI = new MCTSnPolicy(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
         Player2.PlayerAI = new MCTSnCustomEval(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
         Test(100, "FinalTests/MCTSnPolicyVSMCTSnCustomEval.csv");
 
+        Console.WriteLine("Testing batch nr. 16");
         Player1.PlayerAI = new MCTSnCustomEval(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
         Player2.PlayerAI = new MinimaxAI();
         Test(100, "FinalTests/MCTSnCustomEvalVSMinimaxAI.csv");
 
+        Console.WriteLine("Testing batch nr. 17");
         Player1.PlayerAI = new MCTSnCustomEval(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
         Player2.PlayerAI = new MCTSnNNAI(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"), new SmallConvValueNetwork("Models/smallconvvaluemodel71.v0.nn"));
         Test(100, "FinalTests/MCTSnCustomEvalVSMCTSnNNAI.csv");
 
+        Console.WriteLine("Testing batch nr. 18");
         Player1.PlayerAI = new MCTSnCustomEval(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
         Player2.PlayerAI = new MCTSAIScoreDiffAvg();
         Test(100, "FinalTests/MCTSnCustomEvalVSMCTSAIScoreDiffAvg.csv");
 
+        Console.WriteLine("Testing batch nr. 19");
         Player1.PlayerAI = new MCTSAIScoreDiffAvg();
         Player2.PlayerAI = new MinimaxAI();
         Test(100, "FinalTests/MCTSAIScoreDiffAvgVSMinimaxAI.csv");
