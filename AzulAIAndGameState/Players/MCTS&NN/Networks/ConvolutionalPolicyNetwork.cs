@@ -58,15 +58,14 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
 
         public Tensor Call(Tensor x)
         {
-            var residual = fc1.Forward(x);
+            x = fc1.Forward(x);
 
-            residual = residual.reshape(residual.shape[0], 1, 32, 16);
+            x = x.reshape(x.shape[0], 1, 32, 16);
 
-            var x1 = fc2.ForwardWithRelu(residual);
+            var x1 = fc2.ForwardWithRelu(x);
             var x2 = fc3.ForwardWithRelu(x1);
             var x3 = fc4.ForwardWithRelu(x2);
             var x4 = fc5.ForwardWithRelu(x3);
-            x = fc6.ForwardWithRelu(x4, residual);
 
             x = fc6.ForwardWithRelu(x, x4);
             x = fc7.ForwardWithRelu(x, x3);
@@ -87,8 +86,6 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
         public void TrainWithLoss(Tensor loss)
         {
             optimizer.zero_grad();
-            float lossValue = loss.item<float>();
-            //Console.WriteLine("Backpropagating: " + lossValue);
             loss.backward();
             optimizer.step();
         }
