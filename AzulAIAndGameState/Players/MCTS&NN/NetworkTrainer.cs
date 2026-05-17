@@ -17,11 +17,11 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
         DatasetLoader testDatasetLoader;
         public NetworkTrainer(string filename, string trainingProcessData) {
             trainDatasetLoader = new(filename);
-            testDatasetLoader = trainDatasetLoader.SplitTestPart(3000);
+            testDatasetLoader = trainDatasetLoader.SplitTestPart(5000);
 
             _trainingProcessData = trainingProcessData;
         }
-        public void Train(INetwork model, int epochCount, int batchSize = 32) {
+        public void Train(INetwork model, int epochCount, string modelName, int version, int batchSize = 32) {
             Console.WriteLine("Training started");
             float minTestLoss = float.MaxValue;
 
@@ -66,7 +66,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                     minTestLoss = testLoss;
                     Console.WriteLine("Saving model on epoch nr." + epoch);
                     File.AppendAllText(_trainingProcessData, "Saving model on epoch nr." + epoch);
-                    model.Save("Models/smalllinearmodel" + epoch + ".v0.nn");
+                    model.Save("Models/" + modelName + epoch + ".v" + version + ".nn");
                 }
 
                 trainDatasetLoader.Shuffle();
@@ -74,7 +74,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
             }
         }
 
-        public void TrainValue(INetwork model, int epochCount, int batchSize = 32)
+        public void TrainValue(INetwork model, int epochCount, string modelName, int version, int batchSize = 32)
         {
             Console.WriteLine("Value training started");
             File.AppendAllText(_trainingProcessData, "Value training started\n");
@@ -122,7 +122,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                     minTestLoss = testLoss;
                     Console.WriteLine("Saving model on epoch nr." + epoch);
                     File.AppendAllText(_trainingProcessData, "Saving model on epoch nr." + epoch);
-                    model.Save("Models/smallconvvaluemodel" + epoch + ".v0.nn");
+                    model.Save("Models/" + modelName + epoch + ".v" + version + ".nn");
                 }
 
                 trainDatasetLoader.Shuffle();

@@ -39,42 +39,19 @@ namespace AzulAIAndGameState.Players.MCTS_NN
             }
             timer.Stop();
 
-            if (false && _trainingOn) {
-                var predictedPolicy = gameTree.PredictedPolicy;
-                var correctPolicy = gameTree.GetUpdatedPolicyTensor();
+            if (_trainingOn) {
+                var targetPolicy = gameTree.GetMCTSUpdatedPolicy();
+                var predictedPolicyLog = functional.log_softmax(gameTree.PredictedPolicy, 0) - gameTree.CalculatedValue;
+                var policyLoss = -(targetPolicy * predictedPolicyLog).sum().mean();
+                _policyModel.TrainWithLoss(policyLoss);
 
-                var predictedIndices = torch.arange(0, predictedPolicy.shape[0], 6, dtype: torch.ScalarType.Int64);
+                var valueLoss = functional.mse_loss(gameTree.ValuePrediction.squeeze(), (float)gameTree.CalculatedValue);
+                _valueModel.TrainWithLoss(valueLoss);
 
-                torch.Tensor processingLinePredictions = predictedPolicy.index_select(0, predictedIndices);
-                torch.Tensor processingLineCorrect = correctPolicy[0].select(2, 5).flatten();
-
-                //var policyLoss = functional.cross_entropy(predictedPolicy, correctPolicy.flatten());
-                var processingLinePredictionsLoss = functional.cross_entropy(processingLinePredictions, processingLineCorrect);
-                //var valueLoss = functional.mse_loss(gameTree.NetworkValue, gameTree.CalculatedValue);
-                //torch.Tensor loss = policyLoss + processingLinePredictionsLoss * 1000 + valueLoss;
-
-                //optimizer?.zero_grad();
-                //loss.backward();
-                //optimizer?.step();
-
-                double lossFloat = 0;
-                //lossFloat += (double)loss.item<double>() * 1;
-                double processingLineLossFloat = 0;
-                processingLineLossFloat += (double)processingLinePredictionsLoss.item<float>() * 1.0;
-                Console.WriteLine("Loss: " + lossFloat + " Processing loss: " + processingLineLossFloat);
+                double lossValue = (double)valueLoss.item<float>();
+                Console.WriteLine("Nodes visited: " + gameTree.EndsReached + " | Loss: " + lossValue.ToString("F15") +  " | Network value: " + gameTree.NetworkValue + " | Calculated value: " + ((float)gameTree.CalculatedValue).ToString("F15"));
+                File.AppendAllText("LossValueAttemptLongNr3.txt", lossValue + "\n");
             }
-
-            //var targetPolicy = gameTree.GetMCTSUpdatedPolicy();
-            //var predictedPolicyLog = functional.log_softmax(gameTree.PredictedPolicy, 0);
-            //var policyLoss = -(targetPolicy * predictedPolicyLog).sum().mean();
-            //_policyModel.TrainWithLoss(policyLoss);
-
-            //var valueLoss = functional.smooth_l1_loss(gameTree.ValuePrediction.squeeze(), (float)gameTree.CalculatedValue, beta: 0.5);
-            //_valueModel.TrainWithLoss(valueLoss);
-
-            //double lossValue = (double)valueLoss.item<float>();
-            //Console.WriteLine("Nodes visited: " + gameTree.EndsReached + " | Loss: " + lossValue.ToString("F15"));
-            //File.AppendAllText("LossValueAttemptLong.txt", lossValue + "\n");
 
             return gameTree.GetBestMove();
         }
