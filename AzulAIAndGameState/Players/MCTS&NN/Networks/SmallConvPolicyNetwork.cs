@@ -42,13 +42,13 @@ namespace AzulAIAndGameState.Players.MCTS_NN.Networks
 
         public Tensor Call(Tensor x)
         {
-            var residual = fc1.Forward(x);
+            var x0 = fc1.Forward(x);
 
-            residual = residual.reshape(residual.shape[0], 1, 32, 16);
+            x0 = x0.reshape(x0.shape[0], 1, 32, 16);
 
-            var x1 = fc2.ForwardWithRelu(residual);
+            var x1 = fc2.ForwardWithRelu(x0);
             x = fc3.ForwardWithRelu(x1);
-            x = fc4.ForwardWithRelu(x, residual);
+            x = fc4.ForwardWithRelu(x, x0);
             x = fc5.ForwardWithRelu(x, x1);
 
             x = x.flatten(start_dim: 1);
