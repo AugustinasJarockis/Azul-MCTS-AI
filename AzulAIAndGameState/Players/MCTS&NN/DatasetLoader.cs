@@ -72,9 +72,12 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
         }
 
         private void SeparateStatesPoliciesAndValues() {
-            states = data.Select(r => r.Take(r.Length - 2).ToArray().ToTensor([r.Length -2 ])).ToArray();
-            policy = data.Select(r => (long)r[^2]).ToArray();
-            values = data.Select(r => r[^1] > 0 ? 1.0f : (r[^1] < 0 ? -1.0f : 0.0f)).ToArray();
+            //states = data.Select(r => r.Take(r.Length - 2).ToArray().ToTensor([r.Length - 2])).ToArray();
+            //policy = data.Select(r => (long)r[^2]).ToArray();
+            //values = data.Select(r => r[^1] > 0 ? 1.0f : (r[^1] < 0 ? -1.0f : 0.0f)).ToArray(); //TODO: now only works for new value training
+            states = data.Select(r => r.Take(r.Length - 3).ToArray().ToTensor([r.Length - 3])).ToArray();
+            policy = data.Select(r => (long)r[^3]).ToArray();
+            values = data.Select(r => (r[^2] + r[^1] > 0) ? (r[^2] - r[^1]) / (r[^2] + r[^1]) : 0).ToArray(); //TODO: now only works for new value training
         }
     }
 }

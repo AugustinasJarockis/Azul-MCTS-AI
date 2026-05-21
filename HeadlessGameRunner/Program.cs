@@ -18,29 +18,37 @@ using AzulBoardGame.Players.PlayerBase;
 
 //GenerateMoves("GoodMoveDatabase.csv", 10000);
 
-//Parallel.For(0, 100, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-//    i => new GameSetup().GenerateMoves("EvenBiggerMoveDatabase" + i + ".csv", 100));
+//Parallel.For(0, 300, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
+//    i => new GameSetup().GenerateMoves("FinalValueAttempt/FinalValueData" + i + ".csv", 100));
 
 //Console.WriteLine("All threads finished");
+//MergeFiles();
+//Console.WriteLine("Files merged successfully");
+
 
 //var trainer = new NetworkTrainer("GoodMoveDatabaseFull.csv", "FixedConvTraining.v0.csv");
 //var trainer = new NetworkTrainer("HUGEMoveDatabaseFull.csv", "SmallLinearVallueOnHUGE.v0.csv");
+//var trainer = new NetworkTrainer("FinalValueAttempt/FinalValueDataFull.csv", "ImprovedConvSmallTraining.v0.csv"); //Note: no one knows what kind of models generated this database
 //var model = new PolicyValueNetwork("Models/hmodel48.nn");
 //var model = new ConvolutionalPolicyNetwork();
 //var model = new SmallConvPolicyNetwork();
+//var model = new SmallConvImprovedPolicyNetwork();
 //var model = new SmallConvValueNetwork();
 //var model = new PolicyNetwork();
 //var model = new SmallLinearPolicyNetwork();
 //var model = new ValueNetwork();
 //var model = new SmallLinearValueNetwork();
 //trainer.TrainLegalAndNoProcessing(model, 50);
-//trainer.Train(model, 50, "bigconvonhugemodel", 0, 512);
+//trainer.Train(model, 50, "smallconvimprovedpolicynetwork", 0, 512);
 //trainer.TrainValue(model, 50, "smalllinearvalueonhugemodel", 0, 512);
+//int bestModelEpoch = trainer.TrainValue(model, 50, "smalllinearvalueonhugemodel", 1, 512);
 
-new GameSetup().Test(100, "NerfedMinimaxVSMCTSnCustomEval.csv");
+//new GameSetup().Test(100, "NerfedMinimaxVSMCTSnCustomEval.csv");
+//new GameSetup().Test(100, "NerfedMinimaxVSMCTSnNNAI.csv");
 
 //new GameSetup().Test(10000, "TestReinforcementLearning.v2.csv");
 //new GameSetup().Test(100, "TestHugeModelGainsWithCustomEval.v0.csv");
+new GameSetup().Test(100, "TestImprovedConvHardEval.v0.csv");
 //((MCTSnNNAI)players[0].PlayerAI).SaveModel("Models/RL4.nn");
 
 //new GameSetup().RunTests();
@@ -51,24 +59,17 @@ new GameSetup().Test(100, "NerfedMinimaxVSMCTSnCustomEval.csv");
 //new GameSetup().RerunNetworkTestsWithNewModels();
 //new GameSetup().RunNewModelNetworkTestsWithMCTSandCustomValueFunction();
 //new GameSetup().RunTestsWithNewSmallLinear();
-//new GameSetup().RunMCTSnNNAITestsWithNewValueNetwork();
+//new GameSetup().RunMCTSnNNAITestsWithNewValueNetwork("Models/smalllinearonhugemodel15.v0.nn", FinalTests/NewModels/NewValue);
+//new GameSetup().RunMCTSnNNAITestsWithNewValueNetwork("Models/smalllinearvalueonhugemodel41.v1.nn", "FinalValueAttempt");
 
-//MergeFiles();
-//void MergeFiles()
-//{
-//    string old_contents = File.ReadAllText("GoodMoveDatabaseFull.csv");
-//    File.AppendAllText("HUGEMoveDatabaseFull.csv", old_contents);
-//    for (int i = 0; i < 100; i++)
-//    {
-//        string contents = File.ReadAllText("BiggerMoveDatabase" + i + ".csv");
-//        File.AppendAllText("HUGEMoveDatabaseFull.csv", contents);
-//    }
-//    for (int i = 0; i < 100; i++)
-//    {
-//        string contents = File.ReadAllText("EvenBiggerMoveDatabase" + i + ".csv");
-//        File.AppendAllText("HUGEMoveDatabaseFull.csv", contents);
-//    }
-//}
+void MergeFiles()
+{
+    for (int i = 0; i < 300; i++)
+    {
+        string contents = File.ReadAllText("FinalValueAttempt/FinalValueData" + i + ".csv");
+        File.AppendAllText("FinalValueAttempt/FinalValueDataFull.csv", contents);
+    }
+}
 
 public class GameSetup
 {
@@ -93,10 +94,13 @@ public class GameSetup
         //Player1AI = new MCTSnNNAI(policyNetwork, valueNetwork, trainingOn: true);
         //Player1AI = new PolicyNetworkAI(new ConvolutionalPolicyNetwork("Models/convmodel9.v0.nn"));
         //Player2AI = new PolicyNetworkAI(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
+        //Player2AI = new PolicyNetworkAI(new SmallConvImprovedPolicyNetwork("Models/smallconvimprovedpolicynetwork36.v0.nn"));
         //Player2AI = new PolicyNetworkAI(new PolicyNetwork("Models/fullmodel10.v3.nn"));
         //Player1AI = new MCTSnCustomEval(new SmallConvPolicyNetwork("Models/smallconvmodel9.v0.nn"));
-        Player1AI = new MCTSnCustomEval(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"));
+        //Player1AI = new MCTSnCustomEval(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"));
         //Player2AI = new MCTSnNNAI("Models/fullmodel10.v3.nn", "Models/valuemodel21.v1.nn", trainingOn: false);
+        Player1AI = new MCTSnNNAI(new SmallConvImprovedPolicyNetwork("Models/smallconvimprovedpolicynetwork36.v0.nn"), new SmallLinearValueNetwork("Models/smalllinearvalueonhugemodel41.v1.nn"), trainingOn: false);
+        //Player1AI = new MCTSnNNAI(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"), new SmallLinearValueNetwork("Models/smalllinearvalueonhugemodel41.v1.nn"), trainingOn: false);
         //Player2AI = new MCTSnNNAI(policyNetwork, valueNetwork, trainingOn: true);
         //Player2AI = new MCTSnCustomEval("Models/fullmodel10.v3.nn", trainingOn: false);
         Player2AI = new MinimaxAI();
@@ -118,7 +122,10 @@ public class GameSetup
             while (!players.Any(p => p.HasFinished())) {
                 var tileTypes = gameState.TileBankState.RefreshTiles(gameState.TilePlatesState.Plates.Count);
                 gameState.TilePlatesState.RefreshPlates(tileTypes);
+                gameState.CurrentPlayer = gameState.NextRoundStartingPlayer;
 
+                int startingPosition = positions.Count;
+                int startingPlayer = gameState.CurrentPlayer;
 
                 while (gameState.TilePlatesState.TotalTileCount > 0) {
                     positions.Add(gameState.GetListState().Flatten());
@@ -140,16 +147,24 @@ public class GameSetup
 
                 foreach (HeadlessPlayer player in players)
                     player.CompleteRound(gameState.TileBankState);
+
+                for (int i2 = startingPosition; i2 < positions.Count; i2++)
+                {
+                    int playerMove = (startingPlayer + ((startingPosition + i2) % 2)) % 2;
+                    positions[i2].Add(players[playerMove].Points + gameState.PlayerBoardStates[playerMove].GetAdditionalPoints());
+                    positions[i2].Add(players[(playerMove + 1) % 2].Points + gameState.PlayerBoardStates[(playerMove + 1) % 2].GetAdditionalPoints());
+                }
             }
 
             foreach (HeadlessPlayer player in players)
                 player.CalculateAdditionalPoints();
 
-            int score = players[0].Points - players[1].Points;
+            //int score = players[0].Points - players[1].Points;
 
-            for (int i2 = 0; i2 < positions.Count; i2++) {
-                positions[i2].Add(score * (1 - 2 * (i2 % 2)));
-            }
+            //for (int i2 = 0; i2 < positions.Count; i2++)
+            //{
+            //    positions[i2].Add(score * (1 - 2 * (i2 % 2)));
+            //}
 
             WriteGamePositions(filename, positions);
 
@@ -610,37 +625,37 @@ public class GameSetup
         Test(100, "FinalTests/NewModels/StrategyTests/PolicyOnlyVSMCTSnNNAI.csv");
     }
 
-    public void RunMCTSnNNAITestsWithNewValueNetwork()
+    public void RunMCTSnNNAITestsWithNewValueNetwork(string valueNetworkPath, string folderToSaveIn)
     {
         Console.WriteLine("Testing batch nr. 1");
         Player1.PlayerAI = new HeuristicAI();
-        Player2.PlayerAI = new MCTSnNNAI(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"), new SmallLinearValueNetwork("Models/smalllinearvalueonhugemodel48.v0.nn"));
-        Test(100, "FinalTests/NewModels/NewValue/HeuristicVSMCTSnNNAI.csv");
+        Player2.PlayerAI = new MCTSnNNAI(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"), new SmallLinearValueNetwork(valueNetworkPath));
+        Test(100, folderToSaveIn + "/HeuristicVSMCTSnNNAI.csv");
 
         Console.WriteLine("Testing batch nr. 2");
-        Player1.PlayerAI = new MCTSnNNAI(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"), new SmallLinearValueNetwork("Models/smalllinearvalueonhugemodel48.v0.nn"));
+        Player1.PlayerAI = new MCTSnNNAI(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"), new SmallLinearValueNetwork(valueNetworkPath));
         Player2.PlayerAI = new MCTSAIScoreDiffAvg();
-        Test(100, "FinalTests/NewModels/NewValue/MCTSnNNAIVSMCTSAIScoreDiffAvg.csv");
+        Test(100, folderToSaveIn + "/MCTSnNNAIVSMCTSAIScoreDiffAvg.csv");
 
         Console.WriteLine("Testing batch nr. 3");
-        Player1.PlayerAI = new MCTSnNNAI(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"), new SmallLinearValueNetwork("Models/smalllinearvalueonhugemodel48.v0.nn"));
+        Player1.PlayerAI = new MCTSnNNAI(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"), new SmallLinearValueNetwork(valueNetworkPath));
         Player2.PlayerAI = new MinimaxAI();
-        Test(100, "FinalTests/NewModels/NewValue/MCTSnNNAIVSMinimaxAI.csv");
+        Test(100, folderToSaveIn + "/MCTSnNNAIVSMinimaxAI.csv");
 
         Console.WriteLine("Testing batch nr. 4");
         Player1.PlayerAI = new MCTSnCustomEval(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"));
-        Player2.PlayerAI = new MCTSnNNAI(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"), new SmallLinearValueNetwork("Models/smalllinearvalueonhugemodel48.v0.nn"));
-        Test(100, "FinalTests/NewModels/NewValue/MCTSnCustomEvalVSMCTSnNNAI.csv");
+        Player2.PlayerAI = new MCTSnNNAI(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"), new SmallLinearValueNetwork(valueNetworkPath));
+        Test(100, folderToSaveIn + "/MCTSnCustomEvalVSMCTSnNNAI.csv");
 
         Console.WriteLine("Testing batch nr. 5");
         Player1.PlayerAI = new MCTSnPolicy(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"));
-        Player2.PlayerAI = new MCTSnNNAI(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"), new SmallLinearValueNetwork("Models/smalllinearvalueonhugemodel48.v0.nn"));
-        Test(100, "FinalTests/NewModels/NewValue/MCTSnPolicyVSMCTSnNNAI.csv");
+        Player2.PlayerAI = new MCTSnNNAI(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"), new SmallLinearValueNetwork(valueNetworkPath));
+        Test(100, folderToSaveIn + "/MCTSnPolicyVSMCTSnNNAI.csv");
 
         Console.WriteLine("Testing batch nr. 6");
         Player1.PlayerAI = new PolicyNetworkAI(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"));
-        Player2.PlayerAI = new MCTSnNNAI(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"), new SmallLinearValueNetwork("Models/smalllinearvalueonhugemodel48.v0.nn"));
-        Test(100, "FinalTests/NewModels/NewValue/PolicyOnlyVSMCTSnNNAI.csv");
+        Player2.PlayerAI = new MCTSnNNAI(new SmallLinearPolicyNetwork("Models/smalllinearonhugemodel15.v0.nn"), new SmallLinearValueNetwork(valueNetworkPath));
+        Test(100, folderToSaveIn + "/PolicyOnlyVSMCTSnNNAI.csv");
     }
 
     public void Test(int count, string filename) {
@@ -676,6 +691,7 @@ public class GameSetup
         while (!players.Any(p => p.HasFinished())) {
             var tileTypes = gameState.TileBankState.RefreshTiles(gameState.TilePlatesState.Plates.Count);
             gameState.TilePlatesState.RefreshPlates(tileTypes);
+            gameState.CurrentPlayer = gameState.NextRoundStartingPlayer;
 
             while (gameState.TilePlatesState.TotalTileCount > 0) {
                 players[gameState.CurrentPlayer].MakeMove(gameState);

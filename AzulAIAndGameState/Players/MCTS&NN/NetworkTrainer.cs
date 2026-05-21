@@ -74,11 +74,12 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
             }
         }
 
-        public void TrainValue(INetwork model, int epochCount, string modelName, int version, int batchSize = 32)
+        public int TrainValue(INetwork model, int epochCount, string modelName, int version, int batchSize = 32)
         {
             Console.WriteLine("Value training started");
             File.AppendAllText(_trainingProcessData, "Value training started\n");
             float minTestLoss = float.MaxValue;
+            int bestEpoch = 0;
 
             for (int epoch = 0; epoch < epochCount; epoch++)
             {
@@ -120,6 +121,7 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                 if (minTestLoss > testLoss)
                 {
                     minTestLoss = testLoss;
+                    bestEpoch = epoch;
                     Console.WriteLine("Saving model on epoch nr." + epoch);
                     File.AppendAllText(_trainingProcessData, "Saving model on epoch nr." + epoch);
                     model.Save("Models/" + modelName + epoch + ".v" + version + ".nn");
@@ -128,6 +130,8 @@ namespace AzulAIAndGameState.Players.MCTS_CNN
                 trainDatasetLoader.Shuffle();
                 testDatasetLoader.Shuffle();
             }
+
+            return bestEpoch;
         }
 
         public void TrainLegalAndNoProcessing(PolicyNetwork model, int epochCount, int batchSize = 32) {

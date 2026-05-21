@@ -10,7 +10,7 @@ namespace AzulBoardGame.GameState
         public TilePlatesState TilePlatesState;
         public int PlayerCount => PlayerBoardStates.Count;
         public int CurrentPlayer { get; set; } = 0;
-        public int NextRoundStartingPlayer { get; set; } = -1;
+        public int NextRoundStartingPlayer { get; set; } = 0;
         
         public GeneralGameState(int playerCount) {
             TileBankState = new TileBank();
@@ -101,6 +101,7 @@ namespace AzulBoardGame.GameState
             return true;
         }
 
+        //TODO: this should have been used ;(
         public void StartNextRound() {
             CurrentPlayer = NextRoundStartingPlayer;
             foreach (var playerBoard in PlayerBoardStates) {
